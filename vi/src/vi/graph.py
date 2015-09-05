@@ -25,8 +25,14 @@ class graph(object):
     def link(self, a, b, cost=None):
         v1 = self.get_vertex(a)
         v2 = self.get_vertex(b)
+
+        print("LINKING {0} to {1} -- {2} with {3}".format(str(v1), str(v2), ':'.join(map(str, v1.edges)), ':'.join(map(str, v2.edges))))
+
         e = edge(v1, v2, cost)
+        v1.edges.add(e)
+        v2.edges.add(e)
         self.edges.add(e)
+
         return e
 
     def lookup(self, value):

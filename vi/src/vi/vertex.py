@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 class vertex(object):
-    def __init__(self, value, edges=[]):
+    def __init__(self, value, edges=set()):
         self.value = value
         self.edges = edges
 

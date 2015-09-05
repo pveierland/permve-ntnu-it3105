@@ -10,3 +10,7 @@ class graph_search_node(object):
 
     def __lt__(self, other):
         return self.path_cost < other.path_cost
+
+    def __str__(self):
+        return 'graph_search_node(state={0},parent={1},action={2},path_cost={3})'.format(
+            self.state, self.parent, self.action, self.path_cost)

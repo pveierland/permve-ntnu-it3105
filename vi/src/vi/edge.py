@@ -9,4 +9,4 @@ class edge(object):
         return "{0} ← {1} → {2}".format(self.a, self.cost, self.b)
 
     def follow(self, vertex):
-        return b if vertex is a else b
+        return self.b if vertex is self.a else self.b
