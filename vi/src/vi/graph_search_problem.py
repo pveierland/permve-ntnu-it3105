@@ -1,6 +1,5 @@
 from graph_search_action import *
 from graph_search_node import *
-from graph_search_solution import *
 from vertex import *
 
 class graph_search_problem(object):
@@ -19,9 +18,6 @@ class graph_search_problem(object):
             parent_search_node,
             action,
             parent_search_node.path_cost + action.edge.cost)
-
-    def build_solution(self, node):
-        return graph_search_solution(node)
 
     def initial_state(self):
         return self.start_vertex
