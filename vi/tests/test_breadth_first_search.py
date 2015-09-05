@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+from nose.tools import *
 import vi
 
 def build_romania_graph():
@@ -8,17 +11,13 @@ def build_romania_graph():
         [ 'Rimnicu Vilcea', 'Pitesti',        97 ],
         [ 'Pitesti',        'Bucharest',     101 ]])
 
-def test_wtf():
+def test_unconnected_vertex_not_found():
     graph = build_romania_graph()
-    problem = vi.graph_search_problem(
-        graph, graph.lookup('Sibiu'), graph.lookup('Bucharest'))
-    print(graph)
-    print(vi.breadth_first_search(problem))
+    graph.insert_vertex('Oslo')
+    assert not vi.breadth_first_search(graph, 'Sibiu', 'Oslo')
 
-#class TestRecursiveDepthLimitedSearch(unittest.TestCase):
-#    def test_wtf(self):
-#        x = vi.tree_node(42)
-#        self.assertTrue(True)
-#
-#if __name__ == '__main__':
-#    unittest.main()
+def test_find_shallowest_solution():
+    graph  = build_romania_graph()
+    result = vi.breadth_first_search(graph, 'Sibiu', 'Bucharest')
+    assert_equal(result.path, [ 'Sibiu', 'Fagaras', 'Bucharest' ])
+    assert_equal(result.cost, 310)

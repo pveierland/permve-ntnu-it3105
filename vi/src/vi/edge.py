@@ -6,7 +6,10 @@ class edge(object):
         self.cost = cost
 
     def __str__(self):
-        return "{0} ← {1} → {2}".format(self.a, self.cost, self.b)
+        return "{0} ← {1} → {2}".format(self.a.value, self.cost, self.b.value)
 
-    def follow(self, vertex):
-        return self.b if vertex is self.a else self.b
+    def build_str(self, from_vertex):
+        return '{0} → {1}'.format(self.cost, self.follow(from_vertex).value)
+
+    def follow(self, from_vertex):
+        return self.b if from_vertex is self.a else self.b

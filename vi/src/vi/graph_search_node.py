@@ -6,7 +6,7 @@ class graph_search_node(object):
         self.path_cost = path_cost
     
     def __eq__(self, other):
-        return self.path_cost == other.path_cost
+        return self.state == other.state if other is graph_search_node else self.state == other
 
     def __lt__(self, other):
         return self.path_cost < other.path_cost
