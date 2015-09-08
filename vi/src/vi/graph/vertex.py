@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 class vertex(object):
     def __init__(self, value, edges=None):
         self.value = value

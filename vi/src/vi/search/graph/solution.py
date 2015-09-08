@@ -1,4 +1,4 @@
-class graph_search_solution(object):
+class solution(object):
     def __init__(self, node):
         self.cost = node.path_cost
         self.path = []

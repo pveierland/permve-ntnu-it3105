@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-
-from edge import *
-from vertex import *
+import vi.graph.edge
+import vi.graph.vertex
 
 class graph(object):
     def __init__(self, initial=None, edges=None):
-        if not initial or initial[0] is vertex:
+        if not initial or initial[0] is vi.graph.vertex:
             self.vertices, self.edges = set(vertices), set(edges)
         else:
             self.vertices, self.edges = set(), set()
@@ -15,10 +13,10 @@ class graph(object):
         return '\n'.join(str(e) for e in self.edges)
     
     def get_vertex(self, x):
-        return x if x is vertex else self.lookup(x) or self.insert_vertex(x)
+        return x if x is vi.graph.vertex else self.lookup(x) or self.insert_vertex(x)
 
     def insert_vertex(self, x):
-        v = x if x is vertex else vertex(x)
+        v = x if x is vi.graph.vertex else vi.graph.vertex(x)
         self.vertices.add(v)
         return v
     
@@ -26,7 +24,7 @@ class graph(object):
         v1 = self.get_vertex(a)
         v2 = self.get_vertex(b)
 
-        e = edge(v1, v2, cost)
+        e = vi.graph.edge(v1, v2, cost)
         v1.edges.add(e)
         v2.edges.add(e)
         self.edges.add(e)

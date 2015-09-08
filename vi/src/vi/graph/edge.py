@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 class edge(object):
     def __init__(self, a, b, cost=1):
         self.a    = a
