@@ -1,6 +1,3 @@
-def wtf():
-    print("wTF")
-
 def bfs(problem):
     node = problem.build_node(problem.initial_state())
 
