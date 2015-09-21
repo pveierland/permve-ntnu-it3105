@@ -1,2 +1,3 @@
-from coordinate import *
-from rectangle import *
+from wh import *
+from xy import *
+from xywh import *
