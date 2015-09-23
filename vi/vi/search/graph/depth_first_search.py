@@ -1,4 +1,4 @@
-def Dfs(problem):
+def DepthFirstSearch(problem):
     current_node = node(problem.initial_state())
 
     if problem.goal_test(current_node.state):

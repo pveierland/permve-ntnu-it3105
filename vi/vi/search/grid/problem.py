@@ -17,10 +17,10 @@ class Problem(object):
             yield Action.move_right
 
     def goal_test(self, state):
-        return state == goal
+        return self.state == self.goal
 
     def initial_state(self):
-        return start
+        return self.start
     
     def is_blocked(position):
         return position.x < 0 or

@@ -1,8 +1,11 @@
-def Bfs(problem):
-    node = problem.build_node(problem.initial_state())
+import vi.graph
+import vi.search.graph
 
-    if problem.is_goal_state(node.state):
-        return problem.solution(node)
+def BreadthFirstSearch(problem):
+    node = vi.search.graph.Node(problem.initial_state())
+
+    if problem.goal_test(node.state):
+        return vi.search.graph.Solution(node)
 
     frontier = [ node ]
     explored = set()
@@ -12,8 +15,10 @@ def Bfs(problem):
         explored.add(node.state)
 
         for action in problem.actions(node.state):
-            child = problem.build_child_node(node, action)
+            child = vi.search.graph.child_node(problem, node, action)
+
             if child not in frontier and child.state not in explored:
                 if problem.is_goal_state(child.state):
                     return problem.solution(child)
+
                 frontier.append(child)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-class edge(object):
+class Edge(object):
     def __init__(self, a, b, cost=1):
         self.a    = a
         self.b    = b

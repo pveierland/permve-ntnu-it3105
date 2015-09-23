@@ -1,10 +1,10 @@
-class vertex(object):
+class Vertex(object):
     def __init__(self, value, edges=None):
         self.value = value
         self.edges = edges or set()
 
     def __str__(self):
-        s = 'vertex'
+        s = 'Vertex'
         if self.value:
             s += ' ' + str(self.value)
         if self.edges:
