@@ -1,4 +1,4 @@
-def bfs(problem):
+def Bfs(problem):
     node = problem.build_node(problem.initial_state())
 
     if problem.is_goal_state(node.state):

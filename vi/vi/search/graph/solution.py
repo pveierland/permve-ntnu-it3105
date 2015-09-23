@@ -1,4 +1,4 @@
-class solution(object):
+class Solution(object):
     def __init__(self, node):
         self.cost = node.path_cost
         self.path = []

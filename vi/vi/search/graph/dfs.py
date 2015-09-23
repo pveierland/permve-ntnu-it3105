@@ -1,4 +1,4 @@
-def dfs(problem):
+def Dfs(problem):
     current_node = node(problem.initial_state())
 
     if problem.goal_test(current_node.state):

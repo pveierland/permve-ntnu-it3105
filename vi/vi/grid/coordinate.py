@@ -1,4 +1,4 @@
-class coordinate(object):
+class Coordinate(object):
     @staticmethod
     def from_string(input):
         return coordinate(*map(int, input.split(',')))

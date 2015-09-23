@@ -1,7 +1,7 @@
-# Value used to indicate that a grid cell is obstructed
-obstructed = -1
+class Grid(object):
+    # Value used to indicate that a grid cell is obstructed
+    obstructed = -1
 
-class grid(object):
     def __init__(self, width, height):
         self.width  = width
         self.height = height

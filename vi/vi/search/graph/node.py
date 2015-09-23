@@ -1,11 +1,12 @@
-def build_child(problem, parent, action):
-    return node(
-        state     = problem.result(parent.state, action),
-        parent    = parent,
-        action    = action,
-        path_cost = problem.step_cost(parent.state, action))
+class Node(object):
+    @staticmethod
+    def build(problem, parent, action):
+        return node(
+            state     = problem.result(parent.state, action),
+            parent    = parent,
+            action    = action,
+            path_cost = problem.step_cost(parent.state, action))
 
-class node(object):
     def __init__(self, state, parent=None, action=None, path_cost=0):
         self.state     = state
         self.parent    = parent

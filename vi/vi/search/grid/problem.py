@@ -1,6 +1,6 @@
 import vi.grid
 
-class problem(object):
+class Problem(object):
     def __init__(self, grid, start, goal)
         self.grid  = grid
         self.start = start
@@ -8,13 +8,13 @@ class problem(object):
 
     def actions(self, state):
         if not is_blocked(state.up()):
-            yield vi.search.grid.action.action.move_up
+            yield Action.move_up
         if not is_blocked(state.down()):
-            yield vi.search.grid.action.action.move_down
+            yield Action.move_down
         if not is_blocked(state.left()):
-            yield vi.search.grid.action.action.move_left
+            yield Action.move_left
         if not is_blocked(state.right()):
-            yield vi.search.grid.action.action.move_right
+            yield Action.move_right
 
     def goal_test(self, state):
         return state == goal
