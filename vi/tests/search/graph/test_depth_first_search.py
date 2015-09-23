@@ -6,7 +6,7 @@ import vi.graph
 import vi.search.graph
 
 def build_romania_graph():
-    return vi.graph.graph([
+    return vi.graph.from_string([
         [ 'Sibiu',          'Rimnicu Vilcea', 80 ],
         [ 'Sibiu',          'Fagaras',        99 ],
         [ 'Fagaras',        'Bucharest',     211 ],
@@ -16,11 +16,11 @@ def build_romania_graph():
 def test_unconnected_vertex_not_found():
     graph = build_romania_graph()
     graph.insert_vertex('Oslo')
-    problem = vi.search.graph.problem(graph, 'Sibiu', 'Oslo')
-    assert not vi.search.graph.dfs(problem)
+    problem = vi.search.graph.Problem(graph, 'Sibiu', 'Oslo')
+    assert not vi.search.graph.DepthFirstSearch(problem)
 
 def test_find_solution():
     graph   = build_romania_graph()
-    problem = vi.search.graph.problem(graph, 'Sibiu', 'Bucharest')
-    result  = vi.search.graph.dfs(problem)
+    problem = vi.search.graph.Problem(graph, 'Sibiu', 'Bucharest')
+    result  = vi.search.graph.DepthFirstSearch(problem)
     assert result

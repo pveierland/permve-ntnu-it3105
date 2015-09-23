@@ -24,4 +24,4 @@ class Problem(object):
         return action.edge.follow(state)
 
     def step_cost(self, state, action):
-        return state.path_cost + action.edge.cost
+        return action.edge.cost

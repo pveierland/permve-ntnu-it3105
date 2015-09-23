@@ -18,7 +18,7 @@ def BreadthFirstSearch(problem):
             child = vi.search.graph.child_node(problem, node, action)
 
             if child not in frontier and child.state not in explored:
-                if problem.is_goal_state(child.state):
-                    return problem.solution(child)
+                if problem.goal_test(child.state):
+                    return vi.search.graph.Solution(child)
 
                 frontier.append(child)

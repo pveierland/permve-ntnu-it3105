@@ -3,10 +3,9 @@ def child_node(problem, parent, action):
         state     = problem.result(parent.state, action),
         parent    = parent,
         action    = action,
-        path_cost = problem.step_cost(parent.state, action))
+        path_cost = parent.path_cost + problem.step_cost(parent.state, action))
 
 class Node(object):
-
     def __init__(self, state, parent=None, action=None, path_cost=0):
         self.state     = state
         self.parent    = parent
@@ -14,7 +13,7 @@ class Node(object):
         self.path_cost = path_cost
     
     def __eq__(self, other):
-        return self.state == other.state if other is node else self.state == other
+        return self.state == other.state if other is Node else self.state == other
 
     def __lt__(self, other):
         return self.path_cost < other.path_cost

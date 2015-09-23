@@ -1,19 +1,24 @@
+import vi.graph
+import vi.search.graph
+
 def DepthFirstSearch(problem):
-    current_node = node(problem.initial_state())
+    node = vi.search.graph.Node(problem.initial_state())
 
-    if problem.goal_test(current_node.state):
-        return solution(current_node)
+    if problem.goal_test(node.state):
+        return vi.search.graph.Solution(node)
 
-    frontier = [ current_node ]
+    frontier = [ node ]
     explored = set()
 
     while frontier:
-        current_node = frontier.pop()
-        explored.add(current_node.state)
+        node = frontier.pop()
+        explored.add(node.state)
 
-        for action in problem.actions(current_node.state):
-            child = child_node(problem, node, action)
+        for action in problem.actions(node.state):
+            child = vi.search.graph.child_node(problem, node, action)
+
             if child not in frontier and child.state not in explored:
                 if problem.goal_test(child.state):
-                    return problem.solution(child)
+                    return vi.search.graph.Solution(child)
+
                 frontier.append(child)
