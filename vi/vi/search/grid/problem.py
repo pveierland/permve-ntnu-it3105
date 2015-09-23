@@ -3,13 +3,30 @@ import functols
 
 class problem(object):
     @staticmethod
-    def from_string(input):
+    def from_string_map_format(input):
+        def cost_from_cell_type(type):
+            if type == 'w': return 100
+            elif type == 'm': return 50
+            elif type == 'f': return 10
+
+        self.width  = len(input[0])
+        self.height = len(input)
+
+        
+        for line in input
+
+        self.grid_size = vi.grid.coordinate(len(input)
+
+
+    @staticmethod
+    def from_string_1(input)
+        def from_string(input):
         parts = filter(None, re.split('[()]+\\s*[()]*', input))
         
         return problem(
-            grid_size = vi.grid.wh.from_string(parts[0]),
-            start     = vi.grid.xy.from_string(parts[1]),
-            goal      = vi.grid.xy.from_string(parts[2]),
+            grid_size = vi.grid.coordinate.from_string(parts[0]),
+            start     = vi.grid.coordinate.from_string(parts[1]),
+            goal      = vi.grid.coordinate.from_string(parts[2]),
             obstacles = [ vi.grid.xywh.from_string(p) for p in parts[3:] ])
 
     def __init__(self):
