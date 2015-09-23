@@ -7,6 +7,18 @@ class Coordinate(object):
         self.x = x
         self.y = y
 
+    def __getitem__(self, y_offset):
+        class CoordinateRelativeAccessor(object):
+            def __init__(self, origin, y_offset):
+                self.origin   = origin
+                self.y_offset = y_offset
+            
+            def __getitem__(self, x_offset):
+                return Coordinate(self.origin.x + x_offset,
+                                  self.origin.y + self.y_offset)
+
+        return CoordinateRelativeAccessor(self, y_offset)
+
     def __str__(self):
         return "coordinate(x={0},y={1})".format(self.x, self.y)
 
