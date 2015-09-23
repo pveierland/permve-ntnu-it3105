@@ -29,6 +29,3 @@ class problem(object):
             return state == self.goal.state
         else:
             return state.value == self.goal
-    
-    def solution(self, node):
-        return vi.search.graph.solution(node)

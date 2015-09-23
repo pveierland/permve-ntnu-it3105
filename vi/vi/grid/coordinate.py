@@ -6,3 +6,18 @@ class coordinate(object):
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
+    def __str__(self):
+        return "coordinate(x={0},y={1})".format(self.x, self.y)
+
+    def down(self):
+        return coordinate(self.x, self.y - 1)
+
+    def left(self):
+        return coordinate(self.x - 1, self.y)
+
+    def right(self):
+        return coordinate(self.x + 1, self.y)
+
+    def up(self):
+        return coordinate(self.x, self.y + 1)
