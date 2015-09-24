@@ -17,11 +17,10 @@ def test_unconnected_vertex_not_found():
     graph = build_romania_graph()
     graph.insert_vertex('Oslo')
     problem = vi.search.graph.Problem(graph, 'Sibiu', 'Oslo')
-    assert not vi.search.graph.BreadthFirstSearch(problem)
+    assert not vi.search.graph.depth_first(problem)
 
-def test_find_shallowest_solution():
+def test_find_solution():
     graph   = build_romania_graph()
     problem = vi.search.graph.Problem(graph, 'Sibiu', 'Bucharest')
-    result  = vi.search.graph.BreadthFirstSearch(problem)
-    assert_equal(result.path, [ 'Sibiu', 'Fagaras', 'Bucharest' ])
-    assert_equal(result.cost, 310)
+    result  = vi.search.graph.depth_first(problem)
+    assert result

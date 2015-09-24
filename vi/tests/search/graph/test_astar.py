@@ -17,10 +17,10 @@ def test_unconnected_vertex_not_found():
     graph = build_romania_graph()
     graph.insert_vertex('Oslo')
     problem = vi.search.graph.Problem(graph, 'Sibiu', 'Oslo')
-    assert not vi.search.graph.DepthFirstSearch(problem)
+    assert not vi.search.graph.astar(problem)
 
 def test_find_solution():
     graph   = build_romania_graph()
     problem = vi.search.graph.Problem(graph, 'Sibiu', 'Bucharest')
-    result  = vi.search.graph.DepthFirstSearch(problem)
+    result  = vi.search.graph.astar(problem)
     assert result
