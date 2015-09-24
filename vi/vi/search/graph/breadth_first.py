@@ -7,17 +7,23 @@ def breadth_first(problem):
 
     if problem.goal_test(node.state):
         return vi.search.graph.Solution(node)
+    
+    # Search nodes on the 'open list' are stored in a deque.
+    # This allows nodes to be removed from the front of the
+    # 'open list' and added to the end of the 'open list'
+    # in O(1) time.
+    # States corresponding to the search nodes in the
+    # 'open list' are kept in a set. This allows testing
+    # if newly generated states already exist using a
+    # lookup with O(1) cost. In the same manner a set is
+    # used to keep states corresponding to nodes in the
+    # 'closed list'. Since only the knowledge of which
+    # states have been explored is needed, only the states
+    # from the 'closed list' are kept stored and the
+    # nodes on the 'closed list' are discarded.
 
-    # Search nodes on the 'open list' are stored in both a
-    # deque and a set. The deque allows new nodes to be
-    # added to the end and removed from the front in O(1)
-    # time; while the set allows testing if a node is in
-    # the 'open list' in O(1) time. Search nodes in the
-    # 'closed list' are only stored in a set since members
-    # are never removed from it.
-
-    open_deque = deque(node)
-    open_set   = set(node)
+    open_deque = deque([node])
+    open_set   = set([node.state])
     closed_set = set()
 
     while open_deque:
@@ -31,7 +37,7 @@ def breadth_first(problem):
         for action in problem.actions(node.state):
             child = vi.search.graph.child_node(problem, node, action)
 
-            if child not in open_set and child not in closed_set:
+            if child.state not in open_set and child.state not in closed_set:
                 if problem.goal_test(child.state):
                     return vi.search.graph.Solution(child)
 
