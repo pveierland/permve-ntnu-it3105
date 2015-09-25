@@ -13,13 +13,13 @@ class Node(object):
         self.path_cost       = path_cost
         self.heuristic_value = heuristic_value
         self.children        = []
-    
+
     def __lt__(self, other):
         return self.total_cost_estimate() < other.total_cost_estimate()
 
     def add_child(self, child, action):
         self.children.append((child, action))
-    
+
     def attach(self, parent, path_cost):
         self.parent    = parent
         self.path_cost = path_cost
