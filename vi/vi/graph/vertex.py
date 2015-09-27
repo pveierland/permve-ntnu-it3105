@@ -11,3 +11,6 @@ class Vertex(object):
             for edge in self.edges:
                 s += '\n\t' + edge.build_str(self)
         return s
+
+    def is_linked(self, other):
+        return any(edge.follow(self) == other for edge in self.edges)
