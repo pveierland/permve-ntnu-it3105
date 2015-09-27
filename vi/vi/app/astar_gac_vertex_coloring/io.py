@@ -1,9 +1,5 @@
 import vi.graph
 
-def load_graph_from_file(filename):
-    with open(filename, 'r') as f:
-        return parse_graph_file(f.readlines())
-
 def parse_graph_file(lines):
     def build_vertex(text):
         parts = text.strip().split()
