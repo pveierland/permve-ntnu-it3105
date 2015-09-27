@@ -1,5 +1,3 @@
-import math
-
 import vi.grid
 import vi.search.grid
 
@@ -10,12 +8,12 @@ class Problem(object):
         self.goal  = goal
 
     def actions(self, state):
-        if not self.is_blocked(state.left()):
-            yield vi.search.grid.Action.move_left
         if not self.is_blocked(state.up()):
             yield vi.search.grid.Action.move_up
         if not self.is_blocked(state.down()):
             yield vi.search.grid.Action.move_down
+        if not self.is_blocked(state.left()):
+            yield vi.search.grid.Action.move_left
         if not self.is_blocked(state.right()):
             yield vi.search.grid.Action.move_right
 
@@ -23,9 +21,7 @@ class Problem(object):
         return state == self.goal
 
     def heuristic(self, state):
-        #dx = self.goal.x - state.x
-        #dy = self.goal.y - state.y
-        #return math.sqrt(dx * dx + dy * dy)
+        # Use Manhattan heuristic:
         return abs(self.goal.x - state.x) + abs(self.goal.y - state.y)
 
     def initial_state(self):

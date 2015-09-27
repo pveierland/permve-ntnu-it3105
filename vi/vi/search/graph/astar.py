@@ -21,6 +21,9 @@ class AStar(object):
 
         self.state = (vi.search.graph.State.start, initial_node)
 
+    def closed_list(self):
+        return self.closed_hash_table.itervalues()
+
     def generate_node(self, action):
         successor_state = self.problem.result(self.node.state, action)
 
@@ -29,6 +32,8 @@ class AStar(object):
             self.closed_hash_table.get(successor_state)
 
         if not open_entry and not closed_entry:
+            is_successor_state_unique = True
+
             successor_node = vi.search.graph.child_node(
                 self.problem, self.node, action)
 
@@ -36,6 +41,8 @@ class AStar(object):
             heapq.heappush(self.open_heap_queue, successor_node)
             self.open_hash_table[successor_state] = successor_node
         else:
+            is_successor_state_unique = False
+
             successor_node = open_entry or closed_entry
             successor_path_cost = self.node.path_cost + \
                 self.problem.step_cost(self.node.state, action)
@@ -46,12 +53,19 @@ class AStar(object):
                 if closed_entry:
                     successor_node.propagate(self.problem)
 
-                # Node costs in open list may have changed:
+                # Values for nodes in 'open list' may have changed:
                 heapq.heapify(self.open_heap_queue)
 
         self.node.add_child(successor_node, action)
 
-        return successor_node
+        return (successor_node, is_successor_state_unique)
+
+    def is_complete(self):
+        return self.state[0] == vi.search.graph.State.failed or \
+               self.state[0] == vi.search.graph.State.success
+
+    def open_list(self):
+        return self.open_heap_queue
 
     def step(self):
         if self.state[0] == vi.search.graph.State.start or \
@@ -69,8 +83,8 @@ class AStar(object):
             self.closed_hash_table[self.node.state] = self.node
 
             if self.problem.goal_test(self.node.state):
-                solution = vi.search.graph.Solution(node)
-                self.state = (vi.search.graph.State.success, solution)
+                solution = vi.search.graph.Solution(self.node)
+                self.state = (vi.search.graph.State.success, self.node, solution)
                 return self.state
 
             self.state = (vi.search.graph.State.expand_node_begin, self.node)
@@ -82,8 +96,11 @@ class AStar(object):
         action = next(self.actions, None)
 
         if action:
-            successor_node = self.generate_node(action)
-            self.state = (vi.search.graph.State.generate_nodes, self.node, successor_node)
+            successor_node, is_successor_state_unique = self.generate_node(action)
+            self.state = (vi.search.graph.State.generate_nodes,
+                          self.node,
+                          successor_node,
+                          is_successor_state_unique)
         else:
             self.state = (vi.search.graph.State.expand_node_complete, self.node)
 
