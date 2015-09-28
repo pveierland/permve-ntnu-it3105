@@ -76,7 +76,7 @@ class SearchProblemWidget(QWidget):
             self.grid_size = (self.problem.grid.width, self.problem.grid.height)
 
             self.search = vi.search.graph.AStar(self.problem)
-            self.search_state_listener(self.search.state)
+            self.search_state_listener(self.search.state, self.search.info)
 
             self.updateGeometry()
             self.update()
@@ -89,11 +89,11 @@ class SearchProblemWidget(QWidget):
 
     def step(self):
         if self.search and \
-           self.search.state[0] != vi.search.graph.State.success and \
-           self.search.state[0] != vi.search.graph.State.failed:
+           self.search.state != vi.search.graph.State.success and \
+           self.search.state != vi.search.graph.State.failed:
             self.search.step()
             if self.search_state_listener:
-                self.search_state_listener(self.search.state)
+                self.search_state_listener(self.search.state, self.search.info)
             self.update()
 
     def paintEvent(self, event):
@@ -139,18 +139,18 @@ class SearchProblemWidget(QWidget):
         draw_square(self.problem.goal,  self.colors['goal'])
         draw_text(self.problem.goal,    'GOAL')
 
-        if self.search and self.search.state[0] != vi.search.graph.State.start:
+        if self.search and self.search.state != vi.search.graph.State.start:
             for closed_node in self.search.closed_list():
                 draw_square(closed_node.state, self.colors['closed_node'])
 
             for open_node in self.search.open_list():
                 draw_square(open_node.state, self.colors['open_node'])
 
-        if self.search and self.search.state[0] == vi.search.graph.State.success:
-            for action, state in self.search.state[2].path:
+        if self.search and self.search.state == vi.search.graph.State.success:
+            for action, state in self.search.info[1].path:
                 draw_square(state, self.colors['solution_outline'])
 
-        if self.search and self.search.state[0] != vi.search.graph.State.start:
+        if self.search and self.search.state != vi.search.graph.State.start:
             for closed_node in self.search.closed_list():
                 draw_text(closed_node.state, 'g={0}\nh={1:.1f}'.format(closed_node.path_cost, closed_node.heuristic_value))
 
@@ -164,12 +164,12 @@ class SearchProblemWidget(QWidget):
             painter.drawLine(size * x, 0, size * x, size * self.problem.grid.height)
 
         if self.search:
-            if self.search.state[0] == vi.search.graph.State.expand_node_begin or \
-               self.search.state[0] == vi.search.graph.State.generate_nodes or \
-               self.search.state[0] == vi.search.graph.State.expand_node_complete:
-                draw_outline(self.search.state[1].state, self.colors['expand_node_outline'])
-            if self.search.state[0] == vi.search.graph.State.generate_nodes:
-                draw_outline(self.search.state[2].state, self.colors['generate_node_outline'])
+            if self.search.state == vi.search.graph.State.expand_node_begin or \
+               self.search.state == vi.search.graph.State.generate_nodes or \
+               self.search.state == vi.search.graph.State.expand_node_complete:
+                draw_outline(self.search.info[0].state, self.colors['expand_node_outline'])
+            if self.search.state == vi.search.graph.State.generate_nodes:
+                draw_outline(self.search.info[1].state, self.colors['generate_node_outline'])
 
     def set_playing(self, state):
         self.is_playing = state
@@ -181,7 +181,8 @@ class SearchProblemWidget(QWidget):
 
     def sizeHint(self):
         return QSize(2 * self.margin_size + self.cell_size * self.grid_size[0],
-                     2 * self.margin_size + self.cell_size * self.grid_size[1])
+                     2 * self.margin_size + self.cell_size * self.grid_size[1]) \
+               if self.problem else QSize(0, 0)
 
     def solve(self):
         pass
@@ -233,7 +234,7 @@ class SearchApplication(QMainWindow):
 
         self.slider_frequency.setValue(50)
 
-        self.setWindowTitle('VI Search Algorithms')
+        self.setWindowTitle('NTNU IT3105 2015 M1: Navigation -- permve@stud.ntnu.no')
         self.setCentralWidget(widget)
         self.show()
 
@@ -320,34 +321,34 @@ class SearchApplication(QMainWindow):
     def update_play_state(self, is_playing):
         self.button_play.setText("Play" if not is_playing else "Stop")
 
-    def update_search_state(self, state):
-        if state[0] == vi.search.graph.State.start:
+    def update_search_state(self, state, info):
+        if state == vi.search.graph.State.start:
             self.label_search_state.setText(
                 "Starting search node has state ({0},{1}).".format(
-                    state[1].state.x, state[1].state.y))
-        elif state[0] == vi.search.graph.State.success:
+                    info[0].state.x, info[0].state.y))
+        elif state == vi.search.graph.State.success:
             self.label_search_state.setText(
                 "Success! Solution path to goal state ({0},{1}) with cost {2} was found.".format(
-                    state[1].state.x, state[1].state.y,
-                    state[2].cost))
-        elif state[0] == vi.search.graph.State.failed:
+                    info[0].state.x, info[0].state.y,
+                    info[1].cost))
+        elif state == vi.search.graph.State.failed:
             self.label_search_state.setText(
                 "Failure! No solution could be found.")
-        elif state[0] == vi.search.graph.State.expand_node_begin:
+        elif state == vi.search.graph.State.expand_node_begin:
             self.label_search_state.setText(
                 "Expanding node with state ({0},{1}).".format(
-                    state[1].state.x, state[1].state.y))
-        elif state[0] == vi.search.graph.State.generate_nodes:
-            state, node, successor, is_unique = state
+                    info[0].state.x, info[0].state.y))
+        elif state == vi.search.graph.State.generate_nodes:
+            node, successor, is_unique = info
             self.label_search_state.setText(
                 "Generated {0} successor state ({1},{2}) from node with state ({3},{4}).".format(
                     "unique" if is_unique else "existing",
                     successor.state.x, successor.state.y,
                     node.state.x, node.state.y))
-        elif state[0] == vi.search.graph.State.expand_node_complete:
+        elif state == vi.search.graph.State.expand_node_complete:
             self.label_search_state.setText(
                 "Expansion of node with state ({0},{1}) completed.".format(
-                    state[1].state.x, state[1].state.y))
+                    info[0].state.x, info[0].state.y))
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
