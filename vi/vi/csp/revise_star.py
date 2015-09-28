@@ -1,6 +1,6 @@
 import itertools
 
-def revise_star(focal_variable, constraint, state):
+def revise_star(focal_variable, constraint, network):
     def domain_cross_product(focal_value):
         return (dict(itertools.izip(
             itertools.chain(non_focal_domains, {focal_variable: focal_value}), x))
@@ -11,10 +11,10 @@ def revise_star(focal_variable, constraint, state):
                   for variable in constraint.variables
                   if variable is not focal_variable }
 
-    non_focal_domains = { variable: state.domains[variable]
+    non_focal_domains = { variable: network.domains[variable]
                           for variable in variables }
 
     return [ value
-             for value in state.domains[focal_variable]
+             for value in network.domains[focal_variable]
              if any(constraint(values)
                     for values in domain_cross_product(value)) ]
