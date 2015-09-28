@@ -21,6 +21,6 @@ def test_revise_star():
                 z: [1, 2, 3, 4, 5] }
 
     state  = vi.csp.Network({w, x, y, z}, domains)
-    result = vi.csp.revise_star(w, state)
+    result = vi.csp.revise_star(w, constraint, state)
 
     assert result == [1, 2, 3]

@@ -1,6 +1,6 @@
 import itertools
 
-def revise_star(focal_variable, state):
+def revise_star(focal_variable, constraint, state):
     def domain_cross_product(focal_value):
         return (dict(itertools.izip(
             itertools.chain(non_focal_domains, {focal_variable: focal_value}), x))
@@ -8,7 +8,6 @@ def revise_star(focal_variable, state):
                 *itertools.chain(non_focal_domains.itervalues(), [[focal_value]])))
 
     variables = { variable
-                  for constraint in focal_variable.constraints
                   for variable in constraint.variables
                   if variable is not focal_variable }
 
@@ -17,6 +16,5 @@ def revise_star(focal_variable, state):
 
     return [ value
              for value in state.domains[focal_variable]
-             if any(all(constraint(values)
-                        for constraint in focal_variable.constraints)
+             if any(constraint(values)
                     for values in domain_cross_product(value)) ]
