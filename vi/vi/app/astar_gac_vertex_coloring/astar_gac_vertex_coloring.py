@@ -7,17 +7,20 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-import vi.graph
 import vi.app.astar_gac_vertex_coloring
+import vi.csp
+import vi.graph
+import vi.search.graph
+import vi.search.gac
 
 class VertexColoringWidget(QWidget):
     def __init__(self,
                  parent=None,
-                 algorithm_state_listener=None,
+                 search_state_listener=None,
                  play_state_listener=None):
         super(VertexColoringWidget, self).__init__(parent)
 
-        self.algorithm_state_listener = algorithm_state_listener
+        self.search_state_listener = search_state_listener
         self.play_state_listener = play_state_listener
 
         self.setSizePolicy(QSizePolicy(
@@ -47,7 +50,24 @@ class VertexColoringWidget(QWidget):
             'generate_node_outline': QColor(243, 115, 56),
             'closed_node':           QColor(175, 238, 238),
             'open_node':             QColor(152, 251, 152),
-            'solution_outline':      QColor(255, 255, 0)
+            'solution_outline':      QColor(255, 255, 0),
+            1:                       QColor(246, 64, 174),  # pink
+            2:                       QColor(248, 14, 39),   # red
+            3:                       QColor(248, 152, 31),  # orange
+            4:                       QColor(138, 215, 73),  # green
+            5:                       QColor(13, 159, 216),  # blue
+            6:                       QColor(133, 105, 207), # purple
+            'uncolored':             QColor(120, 118, 121)  # dark grey
+            # 'uncolored':             QColor(226, 226, 226), # light grey
+        }
+
+        self.color_to_text = {
+            1: "PINK",
+            2: "RED",
+            3: "ORANGE",
+            4: "GREEN",
+            5: "BLUE",
+            6: "PURPLE"
         }
 
     def load(self, filename):
@@ -62,32 +82,66 @@ class VertexColoringWidget(QWidget):
             self.diff_x = self.max_x - self.min_x
             self.diff_y = self.max_y - self.min_y
 
+            variables = { vertice: vi.csp.Variable(vertice)
+                          for vertice in self.graph.vertices }
+
+            constraints = []
+
+            for edge in self.graph.edges:
+                variable_a = variables[edge.a]
+                variable_b = variables[edge.b]
+
+                constraint = vi.csp.Constraint([variable_a, variable_b],
+                    (lambda values, a=variable_a, b=variable_b: \
+                        values[a] != values[b]))
+
+                variable_a.constraints.add(constraint)
+                variable_b.constraints.add(constraint)
+
+                constraints.append(constraint)
+
+            K = 4
+
+            domains = { variable: range(1, K)
+                        for variable in variables.itervalues() }
+
+            network = vi.csp.Network(set(variables.itervalues()), domains)
+            self.problem = vi.search.gac.Problem(network)
+            self.search = vi.search.graph.AStar(self.problem)
+
             self.updateGeometry()
             self.update()
 
     def play(self):
+        #self.draw_timer = QTimer()
+        #self.draw_timer.setInterval(500)
+        #self.draw_timer.timeout.connect(self.update)
+        #self.draw_timer.setSingleShot(True)
+
         while self.is_playing and not self.search.is_complete():
             self.step()
-            time.sleep(1 / self.frequency)
+            #time.sleep(1 / self.frequency)
         self.set_playing(False)
 
     def step(self):
-        pass #TODO
-        #if self.search and \
-        #   self.search.state[0] != vi.search.graph.State.success and \
-        #   self.search.state[0] != vi.search.graph.State.failed:
-        #    self.search.step()
-        #    if self.search_state_listener:
-        #        self.search_state_listener(self.search.state)
-        #    self.update()
+        if self.search and \
+           self.search.state != vi.search.graph.State.success and \
+           self.search.state != vi.search.graph.State.failed:
+            self.search.step()
+
+            if self.search.state == vi.search.graph.State.success:
+                self.update()
+            #if self.search_state_listener:
+            #    self.search_state_listener(self.search.state, self.search.info)
+            #self.update()
 
     def paintEvent(self, event):
-        if self.graph:
+        if self.search:
             size = self.size()
-        
+
             painter = QPainter(self)
             painter.setRenderHint(QPainter.Antialiasing, True)
-            
+
             painter.setBrush(QBrush(Qt.white))
             painter.drawRect(event.rect())
 
@@ -103,15 +157,25 @@ class VertexColoringWidget(QWidget):
             painter.scale(1.0, -1.0)
             painter.translate(-self.min_x, -self.min_y)
 
+            network = self.search.node.state
+
             for edge in self.graph.edges:
                 painter.drawLine(
                     QPointF(edge.a.value[1][0], edge.a.value[1][1]),
                     QPointF(edge.b.value[1][0], edge.b.value[1][1]))
 
-            for vertex in self.graph.vertices:
+            for variable, domain in network.domains.iteritems():
+                vertex = variable.identity
+
+                has_color = len(domain) == 1
+
+                color = self.colors[domain[0] if has_color else 'uncolored']
+                painter.setBrush(QBrush(color))
+
                 painter.drawEllipse(
                     QPointF(vertex.value[1][0], vertex.value[1][1]),
-                    self.vertex_radii / s_x, self.vertex_radii / s_y)
+                    (self.vertex_radii * 2 if has_color else self.vertex_radii) / s_x,
+                    (self.vertex_radii * 2 if has_color else self.vertex_radii) / s_y)
 
         #def draw_text(coordinate, text):
         #    painter.drawText(QRectF(size * coordinate.x,
@@ -205,9 +269,9 @@ class VertexColoringApplication(QMainWindow):
         super(VertexColoringApplication, self).__init__()
 
         self.vertex_coloring_widget = VertexColoringWidget(
-            self, self.update_algorithm_state, self.update_play_state)
+            self, self.update_search_state, self.update_play_state)
 
-        self.label_algorithm_state = QLabel()
+        self.label_search_state = QLabel()
         self.initialize_group_box_control()
 
         top_layout = QVBoxLayout()
@@ -220,7 +284,7 @@ class VertexColoringApplication(QMainWindow):
 
         layout = QVBoxLayout()
         layout.addLayout(middle_layout)
-        layout.addWidget(self.label_algorithm_state)
+        layout.addWidget(self.label_search_state)
 
         widget = QWidget()
         sizePolicy = QSizePolicy(
@@ -248,7 +312,7 @@ class VertexColoringApplication(QMainWindow):
         self.combo_box_file_selector_load_values()
 
         self.slider_frequency = QSlider(Qt.Horizontal)
-        self.slider_frequency.setRange(5, 500)
+        self.slider_frequency.setRange(5, 1000)
         self.slider_frequency.setTracking(True)
         self.slider_frequency.valueChanged.connect(self.handle_set_frequency)
 
@@ -289,8 +353,42 @@ class VertexColoringApplication(QMainWindow):
         self.label_frequency.setText("{0:.1f} Hz".format(frequency))
         self.vertex_coloring_widget.set_frequency(frequency)
 
-    def update_algorithm_state(self, state):
-        pass
+    def update_search_state(self, state, info):
+        def format_node(n):
+            if not n.action:
+                return "START"
+            else:
+                return "Vertex{0} is {1}".format(
+                    n.action[0].identity.value[0],
+                    self.vertex_coloring_widget.color_to_text[n.action[1]])
+
+        #if state == vi.search.graph.State.start:
+        #    self.label_search_state.setText(
+        #        "Starting search node has state ({0},{1}).".format(
+        #            info[0].state.x, info[0].state.y))
+        #elif state == vi.search.graph.State.success:
+        #    self.label_search_state.setText(
+        #        "Success! Solution path to goal state ({0},{1}) with cost {2} was found.".format(
+        #            info[0].state.x, info[0].state.y,
+        #            info[1].cost))
+        if state == vi.search.graph.State.failed:
+            self.label_search_state.setText(
+                "Failure! No solution could be found.")
+        elif state == vi.search.graph.State.expand_node_begin:
+            self.label_search_state.setText(
+                "Expanding node with assumption {0}.".format(
+                    format_node(info[0])))
+        elif state == vi.search.graph.State.generate_nodes:
+            node, successor, is_unique = info
+            self.label_search_state.setText(
+                "Generated {0} successor state assuming {1} from node with assumption {2}".format(
+                    "unique" if is_unique else "existing",
+                    format_node(successor),
+                    format_node(node)))
+        elif state == vi.search.graph.State.expand_node_complete:
+            self.label_search_state.setText(
+                "Expansion of node with assumption {0} completed.".format(
+                    format_node(info[0])))
 
     def update_play_state(self, is_playing):
         self.button_play.setText("Play" if not is_playing else "Stop")

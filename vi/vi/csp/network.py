@@ -3,5 +3,6 @@ class Network(object):
         self.variables = variables
         self.domains   = domains
 
-    def shallow_copy(self):
-        return Network(self.variables, self.domains)
+    def copy(self):
+        return Network(self.variables.copy(),
+                       self.domains.copy())

@@ -20,7 +20,7 @@ def test_revise_star():
                 y: [1, 2, 3, 4, 5],
                 z: [1, 2, 3, 4, 5] }
 
-    state  = vi.csp.Network({w, x, y, z}, domains)
-    result = vi.csp.revise_star(w, constraint, state)
+    network = vi.csp.Network({w, x, y, z}, domains)
+    result  = vi.csp.revise_star(w, constraint, network)
 
     assert result == [1, 2, 3]

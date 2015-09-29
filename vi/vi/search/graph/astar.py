@@ -6,9 +6,9 @@ class AStar(object):
     def __init__(self, problem):
         self.problem = problem
 
-        initial_node = self.problem.initial_node()
+        self.node = self.problem.initial_node()
 
-        if initial_node:
+        if self.node:
             # Search nodes on the 'open list' are both stored in a
             # heap queue and a hash table. The heap queue keeps
             # search nodes sorted by their total estimated path cost
@@ -16,11 +16,11 @@ class AStar(object):
             # queue in O(1) time. The hash table used for the
             # 'open list' and 'closed list' makes it possible
             # to retrieve a node from a given state in O(1) time.
-            self.open_heap_queue   = [initial_node]
-            self.open_hash_table   = {initial_node.state: initial_node}
+            self.open_heap_queue   = [self.node]
+            self.open_hash_table   = {self.node.state: self.node}
             self.closed_hash_table = {}
 
-            self.state, self.info = State.start, (initial_node,)
+            self.state, self.info = State.start, (self.node,)
         else:
             self.state, self.info = State.failed, (None,)
 

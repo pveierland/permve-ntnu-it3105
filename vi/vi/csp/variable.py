@@ -1,7 +1,7 @@
 class Variable(object):
     def __init__(self, identity, constraints = None):
         self.identity    = identity
-        self.constraints = constraints
+        self.constraints = constraints or set()
 
     def __eq__(self, other):
         return self.identity == other.identity

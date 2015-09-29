@@ -3,7 +3,7 @@ import collections
 import vi.csp
 
 def general_arc_consistency(network):
-    revised_network = network.shallow_copy()
+    revised_network = network.copy()
 
     queue = collections.deque(
         (variable, constraint)
