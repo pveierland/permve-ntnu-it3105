@@ -102,7 +102,7 @@ class VertexColoringWidget(QWidget):
 
             K = 4
 
-            domains = { variable: range(1, K)
+            domains = { variable: range(1, K + 1)
                         for variable in variables.itervalues() }
 
             network = vi.csp.Network(set(variables.itervalues()), domains)
@@ -120,7 +120,7 @@ class VertexColoringWidget(QWidget):
 
         while self.is_playing and not self.search.is_complete():
             self.step()
-            #time.sleep(1 / self.frequency)
+            time.sleep(1 / self.frequency)
         self.set_playing(False)
 
     def step(self):
@@ -129,11 +129,9 @@ class VertexColoringWidget(QWidget):
            self.search.state != vi.search.graph.State.failed:
             self.search.step()
 
-            if self.search.state == vi.search.graph.State.success:
-                self.update()
-            #if self.search_state_listener:
-            #    self.search_state_listener(self.search.state, self.search.info)
-            #self.update()
+            if self.search_state_listener:
+                self.search_state_listener(self.search.state, self.search.info)
+            self.update()
 
     def paintEvent(self, event):
         if self.search:
