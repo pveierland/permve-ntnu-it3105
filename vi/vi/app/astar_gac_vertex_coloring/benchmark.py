@@ -80,6 +80,10 @@ with open(sys.argv[1], 'r') as f:
     domains = { variable: range(1, K+1)
                 for variable in variables.itervalues() }
 
+    big_v, big_d = sorted(domains.iteritems(), key=lambda x: len(x[1]))[0]
+
+    domains[big_v] = [1]
+
     network = vi.csp.Network(set(variables.itervalues()), domains)
     problem = vi.search.gac.Problem(network)
     search = vi.search.graph.AStar(problem)

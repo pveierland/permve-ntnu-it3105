@@ -17,31 +17,27 @@ class Problem(object):
         return Node(vi.csp.general_arc_consistency(self.start))
 
     def successors(self, node):
-        for variable, domain in node.state.domains.iteritems():
-            if len(node.state.domains[variable]) != 1:
-                for value in node.state.domains[variable]:
+        def get_assumption_variable():
+            variable, domain = min(((v, d) \
+                for v, d in node.state.domains.iteritems()
+                if len(d) != 1), key=lambda x: len(x[1]))
+            return variable
 
-#                    print("ASSUMING {0} to be {1}".format(variable.identity.value, value))
+        variable = get_assumption_variable()
 
-                    new_state = node.state.copy()
-                    # Set singular domain for assumed variable:
-                    new_state.domains[variable] = [value]
-                    
-#                    print("BEFORE = {0}".format(
-#                        '\n'.join('{0}:{1}'.format(str(var.identity.value), dom) for (var, dom) in new_state.domains.iteritems())))
+        for value in node.state.domains[variable]:
+            successor_state = node.state.copy()
+            successor_state.domains[variable] = [value]
+            successor_state = vi.csp.general_arc_consistency_rerun(
+                successor_state, variable)
 
-                    new_revised_state = vi.csp.general_arc_consistency(new_state)
-
-#                    print("AFTER = {0}".format(new_revised_state.domains))
-
-                    if self.__is_valid(new_revised_state):
-                        yield Successor(
-                            problem   = self,
-                            parent    = node,
-                            state     = new_revised_state,
-                            action    = (variable, value),
-                            step_cost = 1)
-                break
+            if self.__is_valid(successor_state):
+                yield Successor(
+                    problem   = self,
+                    parent    = node,
+                    state     = successor_state,
+                    action    = (variable, value),
+                    step_cost = 1)
 
     def __is_valid(self, state):
         return all(len(domain) >= 1
