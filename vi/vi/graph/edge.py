@@ -13,4 +13,4 @@ class Edge(object):
         return '{0} → {1}'.format(self.cost, self.follow(from_vertex).value)
 
     def follow(self, from_vertex):
-        return self.b if from_vertex is self.a else self.b
+        return self.b if from_vertex is self.a else self.a

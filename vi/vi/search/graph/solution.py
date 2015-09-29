@@ -4,5 +4,5 @@ class Solution(object):
         self.path = []
 
         while node:
-            self.path.insert(0, node.state.value)
+            self.path.insert(0, (node.action, node.state))
             node = node.parent
