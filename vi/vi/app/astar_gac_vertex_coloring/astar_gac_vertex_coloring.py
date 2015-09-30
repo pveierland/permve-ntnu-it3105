@@ -165,19 +165,19 @@ class VertexColoringWidget(QWidget):
 
                 network = self.search.node.state
 
-                # Sort vertices before drawing for prettiness
+                # Sort vertices before drawing for prettiness:
                 for variable, domain in sorted(network.domains.iteritems(), key=lambda x: x[0].identity):
                     vertex = variable.identity
 
                     has_color = len(domain) == 1
 
                     color = self.colors[domain[0] if has_color else 'uncolored']
+                    radii = self.vertex_radii * 2 if has_color else self.vertex_radii
+
                     painter.setBrush(QBrush(color))
 
-                    painter.drawEllipse(
-                        QPointF(vertex.value[1][0], vertex.value[1][1]),
-                        (self.vertex_radii * 2 if has_color else self.vertex_radii) / s_x,
-                        (self.vertex_radii * 2 if has_color else self.vertex_radii) / s_y)
+                    painter.drawEllipse(QPointF(vertex.value[1][0], vertex.value[1][1]),
+                                        radii / s_x, radii / s_y)
 
     def set_playing(self, state):
         self.is_playing = state
@@ -300,9 +300,9 @@ class VertexColoringApplication(QMainWindow):
     def update_search_state(self, search):
         def format_node(n):
             if not n.action:
-                return "START"
+                return "NO ASSUMPTIONS"
             else:
-                return "Vertex{0} is {1}".format(
+                return "ASSUMPTION Vertex{0} is {1}".format(
                     n.action[0].identity.value[0],
                     self.vertex_coloring_widget.color_to_text[n.action[1]])
 
@@ -314,32 +314,31 @@ class VertexColoringApplication(QMainWindow):
             "Open nodes: {0}\tClosed nodes: {1}\t Total nodes: {2}".format(
                 open_node_count, closed_node_count, total_node_count))
 
-        #if state == vi.search.graph.State.start:
-        #    self.label_search_state.setText(
-        #        "Starting search node has state ({0},{1}).".format(
-        #            info[0].state.x, info[0].state.y))
-        #elif state == vi.search.graph.State.success:
-        #    self.label_search_state.setText(
-        #        "Success! Solution path to goal state ({0},{1}) with cost {2} was found.".format(
-        #            info[0].state.x, info[0].state.y,
-        #            info[1].cost))
-        if search.state == vi.search.graph.State.failed:
+        if search.state == vi.search.graph.State.start:
+            self.label_search_state.setText(
+                "Starting search node has {0}.".format(
+                    format_node(search.info[0])))
+        elif search.state == vi.search.graph.State.success:
+            self.label_search_state.setText(
+                "Success! Solution path with path cost {0} was found.".format(
+                    search.info[1].cost))
+        elif search.state == vi.search.graph.State.failed:
             self.label_search_state.setText(
                 "Failure! No solution could be found.")
         elif search.state == vi.search.graph.State.expand_node_begin:
             self.label_search_state.setText(
-                "Expanding node with assumption {0}.".format(
+                "Expanding node with {0}.".format(
                     format_node(search.info[0])))
         elif search.state == vi.search.graph.State.generate_nodes:
             node, successor, is_unique = search.info
             self.label_search_state.setText(
-                "Generated {0} successor state assuming {1} from node with assumption {2}".format(
+                "Generated {0} successor with {1} from node with {2}.".format(
                     "unique" if is_unique else "existing",
                     format_node(successor),
                     format_node(node)))
         elif search.state == vi.search.graph.State.expand_node_complete:
             self.label_search_state.setText(
-                "Expansion of node with assumption {0} completed.".format(
+                "Expansion of node with {0} completed.".format(
                     format_node(search.info[0])))
 
     def update_play_state(self, is_playing):
