@@ -33,9 +33,9 @@ def build_vertex_coloring_problem_from_file(filename, k=None):
         constraints.append(constraint)
 
     domains = { variable: range(1, k + 1)
-                for variable in variables.itervalues() }
+                for variable in variables.values() }
 
-    network = vi.csp.Network(set(variables.itervalues()), domains, constraints)
+    network = vi.csp.Network(set(variables.values()), domains, constraints)
     problem = vi.search.gac.Problem(network)
 
     return problem, k, boundaries

@@ -2,27 +2,35 @@ import heapq
 
 from vi.search.graph import Solution, State
 
-class AStar(object):
+class Dijkstra(object):
+    def __push_open(node):
+        self.open_heap_queue.append(self.node)
+        self.open_hash_table[self.node.state] = self.node
+
+    def pop_open():
+
+
+    def __push_closed(node):
+        self.closed_hash_table[self.node.state] = self.node
+
+
     def __init__(self, problem):
         self.problem = problem
-
-        self.node = self.problem.initial_node()
+        self.node    = self.problem.initial_node()
 
         if self.node:
-            # Search nodes on the 'open list' are both stored in a
-            # heap queue and a hash table. The heap queue keeps
-            # search nodes sorted by their total estimated path cost
-            # and allows nodes to be added and removed from the
-            # queue in O(1) time. The hash table used for the
-            # 'open list' and 'closed list' makes it possible
-            # to retrieve a node from a given state in O(1) time.
-            self.open_heap_queue   = [self.node]
-            self.open_hash_table   = {self.node.state: self.node}
+            self.open_heap_queue   = []
+            self.open_hash_table   = {}
             self.closed_hash_table = {}
-
-            self.state, self.info = State.start, (self.node,)
+            
+            if self.problem.goal_test(self.node.state):
+                self.__push_closed(self.node)
+                self.__set_state(State.success, self.node, Solution(self.node))
+            else:
+                self.__push_open(self.node)
+                self.__set_state(State.start, self.node)
         else:
-            self.state, self.info = State.failed, (None,)
+            self.__set_state(State.failed)
 
     def closed_list(self):
         return self.closed_hash_table.values()
@@ -38,22 +46,17 @@ class AStar(object):
            self.state == State.expand_node_complete:
 
             if self.open_heap_queue:
-                # Retrieve current node from 'open list':
-                self.node = heapq.heappop(self.open_heap_queue)
-                del self.open_hash_table[self.node.state]
-
-                # Add current node to 'closed list':
-                self.closed_hash_table[self.node.state] = self.node
+                self.node = self.pop_open()
+                self.__push_closed(self.node)
 
                 if self.problem.goal_test(self.node.state):
-                    solution = Solution(self.node)
-                    self.state, self.info = State.success, (self.node, solution)
+                    self.__set_state(State.success,
+                                     self.node,
+                                     Solution(self.node))
                 else:
-                    self.state, self.info = State.expand_node_begin, (self.node,)
+                    self.__set_state(State.expand_node_begin, self.node)
             else:
-                self.state, self.info = State.failed, (None,)
-
-            return self.state, (self.info,)
+                self.__set_state(State.failed)
         else:
             if self.state == State.expand_node_begin:
                 self.successors = self.problem.successors(self.node)
@@ -61,11 +64,15 @@ class AStar(object):
             successor = next(self.successors, None)
 
             if successor:
+
+
+
+
                 self.__handle_successor(successor)
             else:
-                self.state, self.info = State.expand_node_complete, (self.node,)
-
-            return self.state, self.info
+                self.__set_state(State.expand_node_complete, self.node)
+        
+        return self.state, self.info
 
     def __handle_successor(self, successor):
         open_entry = self.open_hash_table.get(successor.state)

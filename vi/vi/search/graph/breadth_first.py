@@ -1,46 +1,72 @@
 from collections import deque
 
-import vi.search.graph
+from vi.search.graph import Solution, State
 
 def breadth_first(problem):
-    node = vi.search.graph.Node(problem.initial_state())
+    self.problem = problem
 
-    if problem.goal_test(node.state):
-        return vi.search.graph.Solution(node)
+    self.node = self.problem.initial_node()
     
-    # Search nodes on the 'open list' are stored in a deque.
-    # This allows nodes to be removed from the front of the
-    # 'open list' and added to the end of the 'open list'
-    # in O(1) time.
-    # States corresponding to the search nodes in the
-    # 'open list' are kept in a set. This allows testing
-    # if newly generated states already exist using a
-    # lookup with O(1) cost. In the same manner a set is
-    # used to keep states corresponding to nodes in the
-    # 'closed list'. Since only the knowledge of which
-    # states have been explored is needed, only the states
-    # from the 'closed list' are kept stored and the
-    # nodes on the 'closed list' are discarded.
+    if self.node:
+        if self.problem.goal_test(self.node.state):
+            self.state, self.info = State.start, (self.node,)
+            return Solution(self.node)
 
-    open_deque = deque([node])
-    open_set   = set([node.state])
-    closed_set = set()
+        self.open_deque        = deque([node])
+        self.open_hash_table   = {self.node.state: self.node}
+        self.closed_hash_table = {}
+    else:
+        self.state, self.info = State.failed, (None,)
 
-    while open_deque:
-        # Get node from the beginning of the 'open list':
-        node = open_deque.popleft()
-        open_set.remove(node.state)
+    def closed_list(self):
+        return self.closed_hash_table.values()
 
-        # Add current node to the 'closed list':
-        closed_set.add(node.state)
+    def is_complete(self):
+        return self.state == State.failed or self.state == State.success
 
-        for action in problem.actions(node.state):
-            child = vi.search.graph.child_node(problem, node, action)
+    def open_list(self):
+        return self.open_heap_queue
 
-            if child.state not in open_set and child.state not in closed_set:
-                if problem.goal_test(child.state):
-                    return vi.search.graph.Solution(child)
+    def step(self):
+        if self.state == State.start or \
+           self.state == State.expand_node_complete:
 
-                # Add child node to end of the 'open list':
-                open_deque.append(child)
-                open_set.add(child.state)
+            if self.open_heap_queue:
+                # Retrieve current node from start of 'open list':
+                self.node = open_deque.popleft()
+                del self.open_hash_table[self.node.state]
+
+                # Add current node to 'closed list':
+                self.closed_hash_table[self.node.state] = self.node
+                
+                self.state, self.info = State.expand_node_begin, (self.node,)
+            else:
+                self.state, self.info = State.failed, (None,)
+        else:
+            if self.state == State.expand_node_begin:
+                self.successors = self.problem.successors(self.node)
+
+            successor = next(self.successors, None)
+
+            if successor:
+                if self.problem.goal_test(successor.state):
+                    # Create solution node + add to 'closed list':
+                    self.node = successor.build_node()
+                    self.closed_hash_table[self.node.state] = self.node
+
+                    solution = Solution(self.node)
+                    self.state, self.info = State.success, (self.node, solution)
+                else:
+                    existing_entry = self.open_hash_table.get(successor.state) or \
+                                     self.closed_hash_table.get(successor.state)
+
+                    if not existing_entry:
+                        self.node = successor.build_node()
+
+                        # Add successor node to end of 'open list':
+                        heapq.heappush(self.open_heap_queue, successor_node)
+                        self.open_hash_table[successor_node.state] = successor_node
+            else:
+                self.state, self.info = State.expand_node_complete, (self.node,)
+            
+        return self.state, self.info

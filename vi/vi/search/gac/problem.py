@@ -7,11 +7,11 @@ class Problem(object):
 
     def goal_test(self, state):
         return all(len(domain) == 1
-                   for variable, domain in state.domains.iteritems())
+                   for variable, domain in state.domains.items())
 
     def heuristic(self, state):
         return sum(len(domain) - 1
-                   for variable, domain in state.domains.iteritems())
+                   for variable, domain in state.domains.items())
 
     def initial_node(self):
         return Node(vi.csp.general_arc_consistency(self.start))
@@ -19,7 +19,7 @@ class Problem(object):
     def successors(self, node):
         def get_assumption_variable():
             variable, domain = min(((v, d) \
-                for v, d in node.state.domains.iteritems()
+                for v, d in node.state.domains.items()
                 if len(d) != 1), key=lambda x: len(x[1]))
             return variable
 
@@ -41,4 +41,4 @@ class Problem(object):
 
     def __is_valid(self, state):
         return all(len(domain) >= 1
-                   for variable, domain in state.domains.iteritems())
+                   for variable, domain in state.domains.items())

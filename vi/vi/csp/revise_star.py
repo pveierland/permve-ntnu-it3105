@@ -5,7 +5,7 @@ def revise_star(focal_variable, constraint, network):
         return (dict(itertools.izip(
             itertools.chain(non_focal_domains, {focal_variable: focal_value}), x))
             for x in itertools.product(
-                *itertools.chain(non_focal_domains.itervalues(), [[focal_value]])))
+                *itertools.chain(non_focal_domains.values(), [[focal_value]])))
 
     variables = { variable
                   for variable in constraint.variables
