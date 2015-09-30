@@ -17,18 +17,16 @@ class SearchProblemWidget(QWidget):
     def __init__(self,
                  parent=None,
                  search_state_listener=None,
-                 play_state_listener=None, wtf=None):
+                 play_state_listener=None):
         super(SearchProblemWidget, self).__init__(parent)
 
         self.search_state_listener = search_state_listener
         self.play_state_listener = play_state_listener
-        self.wtf = wtf
 
         self.setSizePolicy(QSizePolicy(
             QSizePolicy.Fixed, QSizePolicy.Fixed))
 
-        # Used for calculating default size
-        self.grid_size   = (5, 5)
+        self.drawing_lock = threading.Lock()
 
         self.cell_size   = 42
         self.margin_size = 2
@@ -77,7 +75,10 @@ class SearchProblemWidget(QWidget):
         if self.search and \
            self.search.state != vi.search.graph.State.success and \
            self.search.state != vi.search.graph.State.failed:
-            self.search.step()
+
+            with self.drawing_lock:
+                self.search.step()
+
             if self.search_state_listener:
                 self.search_state_listener(self.search.state, self.search.info)
             self.update()
@@ -107,55 +108,56 @@ class SearchProblemWidget(QWidget):
         if not self.problem:
             return
 
-        size = self.cell_size
+        with self.drawing_lock:
+            size = self.cell_size
 
-        painter = QPainter(self)
-        painter.translate(self.margin_size, self.margin_size)
+            painter = QPainter(self)
+            painter.translate(self.margin_size, self.margin_size)
 
-        painter.setPen(QPen(QBrush(self.colors['line']), size / 25))
-        painter.setFont(QFont('Arial', 8))
+            painter.setPen(QPen(QBrush(self.colors['line']), size / 25))
+            painter.setFont(QFont('Arial', 8))
 
-        for y in range(self.problem.grid.height):
-            for x in range(self.problem.grid.width):
-                cell_value = self.problem.grid.values[y][x]
-                draw_square(vi.grid.Coordinate(x, y), self.cell_colors[cell_value])
+            for y in range(self.problem.grid.height):
+                for x in range(self.problem.grid.width):
+                    cell_value = self.problem.grid.values[y][x]
+                    draw_square(vi.grid.Coordinate(x, y), self.cell_colors[cell_value])
 
-        draw_square(self.problem.start, self.colors['start'])
-        draw_text(self.problem.start,   'START')
-        draw_square(self.problem.goal,  self.colors['goal'])
-        draw_text(self.problem.goal,    'GOAL')
+            draw_square(self.problem.start, self.colors['start'])
+            draw_text(self.problem.start,   'START')
+            draw_square(self.problem.goal,  self.colors['goal'])
+            draw_text(self.problem.goal,    'GOAL')
 
-        if self.search and self.search.state != vi.search.graph.State.start:
-            for closed_node in self.search.closed_list():
-                draw_square(closed_node.state, self.colors['closed_node'])
+            if self.search and self.search.state != vi.search.graph.State.start:
+                for closed_node in self.search.closed_list():
+                    draw_square(closed_node.state, self.colors['closed_node'])
 
-            for open_node in self.search.open_list():
-                draw_square(open_node.state, self.colors['open_node'])
+                for open_node in self.search.open_list():
+                    draw_square(open_node.state, self.colors['open_node'])
 
-        if self.search and self.search.state == vi.search.graph.State.success:
-            for action, state in self.search.info[1].path:
-                draw_square(state, self.colors['solution_outline'])
+            if self.search and self.search.state == vi.search.graph.State.success:
+                for action, state in self.search.info[1].path:
+                    draw_square(state, self.colors['solution_outline'])
 
-        if self.search and self.search.state != vi.search.graph.State.start:
-            for closed_node in self.search.closed_list():
-                draw_text(closed_node.state, 'g={0}\nh={1:.1f}'.format(closed_node.path_cost, closed_node.heuristic_value))
+            if self.search and self.search.state != vi.search.graph.State.start:
+                for closed_node in self.search.closed_list():
+                    draw_text(closed_node.state, 'g={0}\nh={1:.1f}'.format(closed_node.path_cost, closed_node.heuristic_value))
 
-            for open_node in self.search.open_list():
-                draw_text(open_node.state, 'g={0}\nh={1:.1f}'.format(open_node.path_cost, open_node.heuristic_value))
+                for open_node in self.search.open_list():
+                    draw_text(open_node.state, 'g={0}\nh={1:.1f}'.format(open_node.path_cost, open_node.heuristic_value))
 
-        for y in range(self.problem.grid.height + 1):
-            painter.drawLine(0, size * (self.problem.grid.height - y), size * self.problem.grid.width, size * (self.problem.grid.height - y))
+            for y in range(self.problem.grid.height + 1):
+                painter.drawLine(0, size * (self.problem.grid.height - y), size * self.problem.grid.width, size * (self.problem.grid.height - y))
 
-        for x in range(self.problem.grid.width + 1):
-            painter.drawLine(size * x, 0, size * x, size * self.problem.grid.height)
+            for x in range(self.problem.grid.width + 1):
+                painter.drawLine(size * x, 0, size * x, size * self.problem.grid.height)
 
-        if self.search:
-            if self.search.state == vi.search.graph.State.expand_node_begin or \
-               self.search.state == vi.search.graph.State.generate_nodes or \
-               self.search.state == vi.search.graph.State.expand_node_complete:
-                draw_outline(self.search.info[0].state, self.colors['expand_node_outline'])
-            if self.search.state == vi.search.graph.State.generate_nodes:
-                draw_outline(self.search.info[1].state, self.colors['generate_node_outline'])
+            if self.search:
+                if self.search.state == vi.search.graph.State.expand_node_begin or \
+                   self.search.state == vi.search.graph.State.generate_nodes or \
+                   self.search.state == vi.search.graph.State.expand_node_complete:
+                    draw_outline(self.search.info[0].state, self.colors['expand_node_outline'])
+                if self.search.state == vi.search.graph.State.generate_nodes:
+                    draw_outline(self.search.info[1].state, self.colors['generate_node_outline'])
 
     def set_playing(self, state):
         self.is_playing = state
@@ -194,7 +196,7 @@ class SearchApplication(QMainWindow):
         super(SearchApplication, self).__init__()
 
         self.search_problem_widget = SearchProblemWidget(
-            self, self.update_search_state, self.update_play_state, self)
+            self, self.update_search_state, self.update_play_state)
 
         self.label_search_state = QLabel()
         self.initialize_group_box_control()
