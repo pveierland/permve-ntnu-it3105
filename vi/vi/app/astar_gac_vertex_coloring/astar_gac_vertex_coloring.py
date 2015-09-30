@@ -370,7 +370,10 @@ class VertexColoringApplication(QMainWindow):
     def update_play_state(self, is_playing):
         self.button_play.setText("Play" if not is_playing else "Stop")
 
-if __name__ == '__main__':
+def main():
     app = QApplication(sys.argv)
     search_application = VertexColoringApplication()
     sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    main()
