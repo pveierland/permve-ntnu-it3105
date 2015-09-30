@@ -70,12 +70,11 @@ class SearchProblemWidget(QWidget):
         while self.is_playing and not self.search.is_complete():
             self.step()
             time.sleep(1 / self.frequency)
+
         self.set_playing(False)
 
     def step(self):
-        if self.search and \
-           self.search.state != vi.search.graph.State.success and \
-           self.search.state != vi.search.graph.State.failed:
+        if self.search and not self.search.is_complete():
 
             with self.drawing_lock:
                 self.search.step()
@@ -178,7 +177,17 @@ class SearchProblemWidget(QWidget):
             return QSize(0, 0)
 
     def solve(self):
-        pass
+        self.stop()
+
+        if self.search:
+            with self.drawing_lock:
+                while not self.search.is_complete():
+                    self.search.step()
+
+            if self.search_state_listener:
+                self.search_state_listener(self.search)
+
+            self.update()
 
     def stop(self):
         self.set_playing(False)
