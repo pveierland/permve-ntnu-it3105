@@ -135,7 +135,8 @@ class VertexColoringWidget(QWidget):
                                      QPointF(vertex_b.x, vertex_b.y))
 
                 # Sort vertices before drawing for prettiness:
-                for variable, domain in sorted(network.domains.items(), key=lambda x: x[0].identity):
+                for variable, domain in sorted(network.domains.items(),
+                                               key=lambda x: x[0].identity.value):
                     vertex = variable.identity
 
                     has_color = len(domain) == 1
