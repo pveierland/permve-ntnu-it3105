@@ -35,6 +35,8 @@ class VertexColoringWidget(QWidget):
 
         self.vertex_radii = 3.0
 
+        self.drawing_lock = threading.Lock()
+
         self.frequency = 1
 
         self.cell_colors = {
@@ -116,11 +118,6 @@ class VertexColoringWidget(QWidget):
             self.update()
 
     def play(self):
-        #self.draw_timer = QTimer()
-        #self.draw_timer.setInterval(500)
-        #self.draw_timer.timeout.connect(self.update)
-        #self.draw_timer.setSingleShot(True)
-
         while self.is_playing and not self.search.is_complete():
             self.step()
             time.sleep(1 / self.frequency)
@@ -130,7 +127,9 @@ class VertexColoringWidget(QWidget):
         if self.search and \
            self.search.state != vi.search.graph.State.success and \
            self.search.state != vi.search.graph.State.failed:
-            self.search.step()
+
+            with self.drawing_lock:
+                self.search.step()
 
             if self.search_state_listener:
                 self.search_state_listener(self.search)
@@ -139,105 +138,46 @@ class VertexColoringWidget(QWidget):
 
     def paintEvent(self, event):
         if self.search:
-            size = self.size()
+            with self.drawing_lock:
+                painter = QPainter(self)
+                painter.setRenderHint(QPainter.Antialiasing, True)
 
-            painter = QPainter(self)
-            painter.setRenderHint(QPainter.Antialiasing, True)
+                painter.setBrush(QBrush(Qt.white))
+                painter.drawRect(event.rect())
 
-            painter.setBrush(QBrush(Qt.white))
-            painter.drawRect(event.rect())
+                painter.setPen(QPen(Qt.black, 0))
+                painter.setBrush(QBrush(Qt.black, Qt.SolidPattern))
 
-            painter.setPen(QPen(Qt.red, 0))
-            painter.setBrush(QBrush(Qt.red, Qt.SolidPattern))
+                size = self.size()
+                s_x = 0.9 * size.width() / self.diff_x
+                s_y = 0.9 * size.height() / self.diff_y
 
-            s_x = 0.9 * size.width() / self.diff_x
-            s_y = 0.9 * size.height() / self.diff_y
+                painter.translate(size.width() * 0.05, size.height() * 0.05)
+                painter.scale(s_x, s_y)
+                painter.translate(0.0, self.diff_y)
+                painter.scale(1.0, -1.0)
+                painter.translate(-self.min_x, -self.min_y)
 
-            painter.translate(size.width() * 0.05, size.height() * 0.05)
-            painter.scale(s_x, s_y)
-            painter.translate(0.0, self.diff_y)
-            painter.scale(1.0, -1.0)
-            painter.translate(-self.min_x, -self.min_y)
+                for edge in self.graph.edges:
+                    painter.drawLine(
+                        QPointF(edge.a.value[1][0], edge.a.value[1][1]),
+                        QPointF(edge.b.value[1][0], edge.b.value[1][1]))
 
-            network = self.search.node.state
+                network = self.search.node.state
 
-            for edge in self.graph.edges:
-                painter.drawLine(
-                    QPointF(edge.a.value[1][0], edge.a.value[1][1]),
-                    QPointF(edge.b.value[1][0], edge.b.value[1][1]))
+                # Sort vertices before drawing for prettiness
+                for variable, domain in sorted(network.domains.iteritems(), key=lambda x: x[0].identity):
+                    vertex = variable.identity
 
-            for variable, domain in network.domains.iteritems():
-                vertex = variable.identity
+                    has_color = len(domain) == 1
 
-                has_color = len(domain) == 1
+                    color = self.colors[domain[0] if has_color else 'uncolored']
+                    painter.setBrush(QBrush(color))
 
-                color = self.colors[domain[0] if has_color else 'uncolored']
-                painter.setBrush(QBrush(color))
-
-                painter.drawEllipse(
-                    QPointF(vertex.value[1][0], vertex.value[1][1]),
-                    (self.vertex_radii * 2 if has_color else self.vertex_radii) / s_x,
-                    (self.vertex_radii * 2 if has_color else self.vertex_radii) / s_y)
-
-        #def draw_text(coordinate, text):
-        #    painter.drawText(QRectF(size * coordinate.x,
-        #                     size * (self.problem.grid.height - coordinate.y - 1),
-        #                     size, size),
-        #                     Qt.AlignCenter,
-        #                     text)
-
-        #if not self.problem:
-        #    return
-
-        #size = self.cell_size
-
-        #painter = QPainter(self)
-        #painter.translate(self.margin_size, self.margin_size)
-
-        #painter.setPen(QPen(QBrush(self.colors['line']), size / 25))
-        #painter.setFont(QFont('Arial', 8))
-
-        #for y in range(self.problem.grid.height):
-        #    for x in range(self.problem.grid.width):
-        #        cell_value = self.problem.grid.values[y][x]
-        #        draw_square(vi.grid.Coordinate(x, y), self.cell_colors[cell_value])
-
-        #draw_square(self.problem.start, self.colors['start'])
-        #draw_text(self.problem.start,   'START')
-        #draw_square(self.problem.goal,  self.colors['goal'])
-        #draw_text(self.problem.goal,    'GOAL')
-
-        #if self.search and self.search.state[0] != vi.search.graph.State.start:
-        #    for closed_node in self.search.closed_list():
-        #        draw_square(closed_node.state, self.colors['closed_node'])
-
-        #    for open_node in self.search.open_list():
-        #        draw_square(open_node.state, self.colors['open_node'])
-
-        #if self.search and self.search.state[0] == vi.search.graph.State.success:
-        #    for action, state in self.search.state[2].path:
-        #        draw_square(state, self.colors['solution_outline'])
-
-        #if self.search and self.search.state[0] != vi.search.graph.State.start:
-        #    for closed_node in self.search.closed_list():
-        #        draw_text(closed_node.state, 'g={0}\nh={1:.1f}'.format(closed_node.path_cost, closed_node.heuristic_value))
-
-        #    for open_node in self.search.open_list():
-        #        draw_text(open_node.state, 'g={0}\nh={1:.1f}'.format(open_node.path_cost, open_node.heuristic_value))
-
-        #for y in range(self.problem.grid.height + 1):
-        #    painter.drawLine(0, size * (self.problem.grid.height - y), size * self.problem.grid.width, size * (self.problem.grid.height - y))
-
-        #for x in range(self.problem.grid.width + 1):
-        #    painter.drawLine(size * x, 0, size * x, size * self.problem.grid.height)
-
-        #if self.search:
-        #    if self.search.state[0] == vi.search.graph.State.expand_node_begin or \
-        #       self.search.state[0] == vi.search.graph.State.generate_nodes or \
-        #       self.search.state[0] == vi.search.graph.State.expand_node_complete:
-        #        draw_outline(self.search.state[1].state, self.colors['expand_node_outline'])
-        #    if self.search.state[0] == vi.search.graph.State.generate_nodes:
-        #        draw_outline(self.search.state[2].state, self.colors['generate_node_outline'])
+                    painter.drawEllipse(
+                        QPointF(vertex.value[1][0], vertex.value[1][1]),
+                        (self.vertex_radii * 2 if has_color else self.vertex_radii) / s_x,
+                        (self.vertex_radii * 2 if has_color else self.vertex_radii) / s_y)
 
     def set_playing(self, state):
         self.is_playing = state
