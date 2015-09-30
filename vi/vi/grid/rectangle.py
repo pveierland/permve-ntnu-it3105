@@ -1,8 +1,4 @@
 class Rectangle(object):
-    @staticmethod
-    def from_string(input):
-        return Rectangle(*map(int, input.split(',')))
-
     def __init__(self, x, y, width, height):
         self.x      = x
         self.y      = y

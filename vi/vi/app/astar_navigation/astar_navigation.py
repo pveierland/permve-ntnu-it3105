@@ -8,6 +8,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
+import vi.app.astar_navigation
 import vi.grid
 import vi.search.graph
 import vi.search.grid
@@ -58,24 +59,9 @@ class SearchProblemWidget(QWidget):
 
     def load(self, filename):
         with open(filename, 'r') as f:
-            parts = filter(None, re.split('[()]+\\s*[()]*', f.read()))
+            self.problem = vi.app.astar_navigation.parse_grid_problem(f.read())
+            self.search  = vi.search.graph.AStar(self.problem)
 
-            dimensions = vi.grid.Coordinate.from_string(parts[0])
-            start      = vi.grid.Coordinate.from_string(parts[1])
-            goal       = vi.grid.Coordinate.from_string(parts[2])
-            obstacles  = [vi.grid.Rectangle.from_string(p) for p in parts[3:]]
-
-            grid = vi.grid.Grid(width=dimensions.x, height=dimensions.y)
-
-            for obstacle in obstacles:
-                for y in range(obstacle.y, obstacle.y + obstacle.height):
-                    for x in range(obstacle.x, obstacle.x + obstacle.width):
-                        grid.values[y][x] = vi.grid.obstructed
-
-            self.problem = vi.search.grid.Problem(grid, start, goal)
-            self.grid_size = (self.problem.grid.width, self.problem.grid.height)
-
-            self.search = vi.search.graph.AStar(self.problem)
             self.search_state_listener(self.search.state, self.search.info)
 
             self.updateGeometry()
@@ -180,9 +166,12 @@ class SearchProblemWidget(QWidget):
         self.frequency = frequency
 
     def sizeHint(self):
-        return QSize(2 * self.margin_size + self.cell_size * self.grid_size[0],
-                     2 * self.margin_size + self.cell_size * self.grid_size[1]) \
-               if self.problem else QSize(0, 0)
+        if self.problem:
+            offset = 2 * self.margin_size
+            return QSize(offset + self.cell_size * self.problem.grid.width,
+                         offset + self.cell_size * self.problem.grid.height)
+        else:
+            return QSize(0, 0)
 
     def solve(self):
         pass
