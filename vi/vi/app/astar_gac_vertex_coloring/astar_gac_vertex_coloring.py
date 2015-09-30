@@ -109,6 +109,9 @@ class VertexColoringWidget(QWidget):
             self.problem = vi.search.gac.Problem(network)
             self.search = vi.search.graph.AStar(self.problem)
 
+            if self.search_state_listener:
+                self.search_state_listener(self.search)
+
             self.updateGeometry()
             self.update()
 
@@ -130,7 +133,8 @@ class VertexColoringWidget(QWidget):
             self.search.step()
 
             if self.search_state_listener:
-                self.search_state_listener(self.search.state, self.search.info)
+                self.search_state_listener(self.search)
+
             self.update()
 
     def paintEvent(self, event):
@@ -270,6 +274,7 @@ class VertexColoringApplication(QMainWindow):
             self, self.update_search_state, self.update_play_state)
 
         self.label_search_state = QLabel()
+        self.label_search_nodes = QLabel()
         self.initialize_group_box_control()
 
         top_layout = QVBoxLayout()
@@ -283,6 +288,7 @@ class VertexColoringApplication(QMainWindow):
         layout = QVBoxLayout()
         layout.addLayout(middle_layout)
         layout.addWidget(self.label_search_state)
+        layout.addWidget(self.label_search_nodes)
 
         widget = QWidget()
         sizePolicy = QSizePolicy(
@@ -351,7 +357,7 @@ class VertexColoringApplication(QMainWindow):
         self.label_frequency.setText("{0:.1f} Hz".format(frequency))
         self.vertex_coloring_widget.set_frequency(frequency)
 
-    def update_search_state(self, state, info):
+    def update_search_state(self, search):
         def format_node(n):
             if not n.action:
                 return "START"
@@ -359,6 +365,14 @@ class VertexColoringApplication(QMainWindow):
                 return "Vertex{0} is {1}".format(
                     n.action[0].identity.value[0],
                     self.vertex_coloring_widget.color_to_text[n.action[1]])
+
+        open_node_count   = sum(1 for _ in search.open_list())
+        closed_node_count = sum(1 for _ in search.closed_list())
+        total_node_count  = open_node_count + closed_node_count
+
+        self.label_search_nodes.setText(
+            "Open nodes: {0}\tClosed nodes: {1}\t Total nodes: {2}".format(
+                open_node_count, closed_node_count, total_node_count))
 
         #if state == vi.search.graph.State.start:
         #    self.label_search_state.setText(
@@ -369,24 +383,24 @@ class VertexColoringApplication(QMainWindow):
         #        "Success! Solution path to goal state ({0},{1}) with cost {2} was found.".format(
         #            info[0].state.x, info[0].state.y,
         #            info[1].cost))
-        if state == vi.search.graph.State.failed:
+        if search.state == vi.search.graph.State.failed:
             self.label_search_state.setText(
                 "Failure! No solution could be found.")
-        elif state == vi.search.graph.State.expand_node_begin:
+        elif search.state == vi.search.graph.State.expand_node_begin:
             self.label_search_state.setText(
                 "Expanding node with assumption {0}.".format(
-                    format_node(info[0])))
-        elif state == vi.search.graph.State.generate_nodes:
-            node, successor, is_unique = info
+                    format_node(search.info[0])))
+        elif search.state == vi.search.graph.State.generate_nodes:
+            node, successor, is_unique = search.info
             self.label_search_state.setText(
                 "Generated {0} successor state assuming {1} from node with assumption {2}".format(
                     "unique" if is_unique else "existing",
                     format_node(successor),
                     format_node(node)))
-        elif state == vi.search.graph.State.expand_node_complete:
+        elif search.state == vi.search.graph.State.expand_node_complete:
             self.label_search_state.setText(
                 "Expansion of node with assumption {0} completed.".format(
-                    format_node(info[0])))
+                    format_node(search.info[0])))
 
     def update_play_state(self, is_playing):
         self.button_play.setText("Play" if not is_playing else "Stop")
