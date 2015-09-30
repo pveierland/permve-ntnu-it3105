@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import time
 import threading
@@ -17,11 +18,14 @@ class VertexColoringWidget(QWidget):
     def __init__(self,
                  parent=None,
                  search_state_listener=None,
-                 play_state_listener=None):
+                 play_state_listener=None,
+                 k_state_listener=None):
+
         super(VertexColoringWidget, self).__init__(parent)
 
         self.search_state_listener = search_state_listener
-        self.play_state_listener = play_state_listener
+        self.play_state_listener   = play_state_listener
+        self.k_state_listener      = k_state_listener
 
         self.setSizePolicy(QSizePolicy(
             QSizePolicy.Fixed, QSizePolicy.Fixed))
@@ -30,14 +34,13 @@ class VertexColoringWidget(QWidget):
         self.is_playing  = False
 
         self.search  = None
-
         self.graph = None
 
         self.vertex_radii = 3.0
+        self.frequency    = 1
+        self.k            = 4
 
         self.drawing_lock = threading.Lock()
-
-        self.frequency = 1
 
         self.cell_colors = {
             -1: QColor(51, 51, 51),
@@ -59,8 +62,10 @@ class VertexColoringWidget(QWidget):
             4:                       QColor(138, 215, 73),  # green
             5:                       QColor(13, 159, 216),  # blue
             6:                       QColor(133, 105, 207), # purple
+            7:                       QColor(244, 244, 0),   # yellow
+            8:                       QColor(255, 255, 255), # white
+            9:                       QColor(0, 0, 0),       # black
             'uncolored':             QColor(120, 118, 121)  # dark grey
-            # 'uncolored':             QColor(226, 226, 226), # light grey
         }
 
         self.color_to_text = {
@@ -69,69 +74,34 @@ class VertexColoringWidget(QWidget):
             3: "ORANGE",
             4: "GREEN",
             5: "BLUE",
-            6: "PURPLE"
+            6: "PURPLE",
+            7: "YELLOW",
+            8: "WHITE",
+            9: "BLACK"
         }
 
+    def __init_problem(self, k=None):
+        if self.filename:
+            self.problem, self.k, self.boundaries = \
+                vi.app.astar_gac_vertex_coloring.build_vertex_coloring_problem_from_file(
+                    self.filename, k)
+
+    def __init_search(self):
+        self.search = vi.search.graph.AStar(self.problem)
+
+        if self.search_state_listener:
+            self.search_state_listener(self.search)
+
+        if self.k_state_listener:
+            self.k_state_listener(self.k)
+
+        self.updateGeometry()
+        self.update()
+
     def load(self, filename):
-        with open(filename, 'r') as f:
-            self.graph = vi.app.astar_gac_vertex_coloring.parse_graph_file(f.readlines())
-
-            self.min_x = min(v.value[1][0] for v in self.graph.vertices)
-            self.max_x = max(v.value[1][0] for v in self.graph.vertices)
-            self.min_y = min(v.value[1][1] for v in self.graph.vertices)
-            self.max_y = max(v.value[1][1] for v in self.graph.vertices)
-
-            self.diff_x = self.max_x - self.min_x
-            self.diff_y = self.max_y - self.min_y
-
-            variables = { vertice: vi.csp.Variable(vertice)
-                          for vertice in self.graph.vertices }
-
-            constraints = []
-
-            for edge in self.graph.edges:
-                variable_a = variables[edge.a]
-                variable_b = variables[edge.b]
-
-                constraint = vi.csp.Constraint([variable_a, variable_b],
-                    (lambda values, a=variable_a, b=variable_b: \
-                        values[a] != values[b]))
-
-                variable_a.constraints.add(constraint)
-                variable_b.constraints.add(constraint)
-
-                constraints.append(constraint)
-
-            K = 4
-
-            domains = { variable: range(1, K + 1)
-                        for variable in variables.itervalues() }
-
-            network = vi.csp.Network(set(variables.itervalues()), domains)
-            self.problem = vi.search.gac.Problem(network)
-            self.search = vi.search.graph.AStar(self.problem)
-
-            if self.search_state_listener:
-                self.search_state_listener(self.search)
-
-            self.updateGeometry()
-            self.update()
-
-    def play(self):
-        while self.is_playing and not self.search.is_complete():
-            self.step()
-            time.sleep(1 / self.frequency)
-        self.set_playing(False)
-
-    def step(self):
-        if self.search and not self.search.is_complete():
-            with self.drawing_lock:
-                self.search.step()
-
-            if self.search_state_listener:
-                self.search_state_listener(self.search)
-
-            self.update()
+        self.filename = filename
+        self.__init_problem()
+        self.__init_search()
 
     def paintEvent(self, event):
         if self.search:
@@ -146,21 +116,23 @@ class VertexColoringWidget(QWidget):
                 painter.setBrush(QBrush(Qt.black, Qt.SolidPattern))
 
                 size = self.size()
-                s_x = 0.9 * size.width() / self.diff_x
-                s_y = 0.9 * size.height() / self.diff_y
+                s_x = 0.9 * size.width() / self.boundaries.diff.x
+                s_y = 0.9 * size.height() / self.boundaries.diff.y
 
                 painter.translate(size.width() * 0.05, size.height() * 0.05)
                 painter.scale(s_x, s_y)
-                painter.translate(0.0, self.diff_y)
+                painter.translate(0.0, self.boundaries.diff.y)
                 painter.scale(1.0, -1.0)
-                painter.translate(-self.min_x, -self.min_y)
-
-                for edge in self.graph.edges:
-                    painter.drawLine(
-                        QPointF(edge.a.value[1][0], edge.a.value[1][1]),
-                        QPointF(edge.b.value[1][0], edge.b.value[1][1]))
+                painter.translate(-self.boundaries.min.x, -self.boundaries.min.y)
 
                 network = self.search.node.state
+
+                for constraint in network.constraints:
+                    vertex_a = constraint.variables[0].identity.value
+                    vertex_b = constraint.variables[1].identity.value
+
+                    painter.drawLine(QPointF(vertex_a.x, vertex_a.y),
+                                     QPointF(vertex_b.x, vertex_b.y))
 
                 # Sort vertices before drawing for prettiness:
                 for variable, domain in sorted(network.domains.iteritems(), key=lambda x: x[0].identity):
@@ -173,19 +145,30 @@ class VertexColoringWidget(QWidget):
 
                     painter.setBrush(QBrush(color))
 
-                    painter.drawEllipse(QPointF(vertex.value[1][0], vertex.value[1][1]),
-                                        radii / s_x, radii / s_y)
+                    painter.drawEllipse(QPointF(vertex.value.x, vertex.value.y),
+                                        radii / s_x,
+                                        radii / s_y)
+
+    def play(self):
+        while self.is_playing and not self.search.is_complete():
+            self.step()
+            time.sleep(1 / self.frequency)
+        self.set_playing(False)
+
+    def set_frequency(self, frequency):
+        self.frequency = frequency
 
     def set_playing(self, state):
         self.is_playing = state
         if self.play_state_listener:
             self.play_state_listener(state)
 
-    def set_frequency(self, frequency):
-        self.frequency = frequency
+    def set_k(self, k):
+        self.__init_problem(k)
+        self.__init_search()
 
     def sizeHint(self):
-        return QSize(750, 750) if self.graph else QSize(0, 0)
+        return QSize(750, 750) if self.search else QSize(0, 0)
 
     def solve(self):
         self.stop()
@@ -200,6 +183,19 @@ class VertexColoringWidget(QWidget):
 
             self.update()
 
+    def step(self):
+        if self.problem:
+            if self.search and not self.search.is_complete():
+                with self.drawing_lock:
+                    self.search.step()
+
+                if self.search_state_listener:
+                    self.search_state_listener(self.search)
+
+                self.update()
+            else:
+                self.__init_search()
+
     def stop(self):
         self.set_playing(False)
         if self.play_thread:
@@ -207,6 +203,9 @@ class VertexColoringWidget(QWidget):
 
     def toggle_play(self):
         if not self.is_playing:
+            if self.search.is_complete():
+                self.__init_search()
+
             self.set_playing(True)
             self.play_thread = threading.Thread(target=self.play)
             self.play_thread.start()
@@ -218,7 +217,10 @@ class VertexColoringApplication(QMainWindow):
         super(VertexColoringApplication, self).__init__()
 
         self.vertex_coloring_widget = VertexColoringWidget(
-            self, self.update_search_state, self.update_play_state)
+            self,
+            self.update_search_state,
+            self.update_play_state,
+            self.update_k_state)
 
         self.label_search_state = QLabel()
         self.label_search_nodes = QLabel()
@@ -262,6 +264,20 @@ class VertexColoringApplication(QMainWindow):
         self.combo_box_file_selector.activated[str].connect(self.vertex_coloring_widget.load)
         self.combo_box_file_selector_load_values()
 
+        self.label_k = QLabel("K:")
+
+        self.spinbox_k = QSpinBox()
+        self.spinbox_k.setMinimum(1)
+        self.spinbox_k.setMaximum(9)
+        self.spinbox_k.setValue(4)
+        self.spinbox_k.valueChanged.connect(self.vertex_coloring_widget.set_k)
+
+        layout_input = QHBoxLayout()
+        layout_input.addWidget(self.combo_box_file_selector)
+        layout_input.addWidget(self.label_k)
+        layout_input.setAlignment(self.label_k, Qt.AlignRight)
+        layout_input.addWidget(self.spinbox_k)
+
         self.slider_frequency = QSlider(Qt.Horizontal)
         self.slider_frequency.setRange(5, 1000)
         self.slider_frequency.setTracking(True)
@@ -287,7 +303,7 @@ class VertexColoringApplication(QMainWindow):
         layout_buttons.addWidget(self.button_solve)
 
         layout = QVBoxLayout()
-        layout.addWidget(self.combo_box_file_selector)
+        layout.addLayout(layout_input)
         layout.addLayout(layout_slider)
         layout.addLayout(layout_buttons)
 
@@ -303,6 +319,9 @@ class VertexColoringApplication(QMainWindow):
         frequency = value / 10.0
         self.label_frequency.setText("{0:.1f} Hz".format(frequency))
         self.vertex_coloring_widget.set_frequency(frequency)
+
+    def update_k_state(self, k):
+        self.spinbox_k.setValue(k)
 
     def update_search_state(self, search):
         def format_node(n):

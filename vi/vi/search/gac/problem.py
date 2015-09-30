@@ -26,7 +26,7 @@ class Problem(object):
         variable = get_assumption_variable()
 
         for value in node.state.domains[variable]:
-            successor_state = node.state.copy()
+            successor_state = node.state.copy_domains()
             successor_state.domains[variable] = [value]
             successor_state = vi.csp.general_arc_consistency_rerun(
                 successor_state, variable)
