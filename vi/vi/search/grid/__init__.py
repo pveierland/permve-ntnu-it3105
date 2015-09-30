@@ -1,2 +1,2 @@
-from action import *
-from problem import *
+from .action import *
+from .problem import *

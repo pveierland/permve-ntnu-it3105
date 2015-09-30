@@ -1,3 +1,3 @@
-from edge import *
-from graph import *
-from vertex import *
+from .edge import *
+from .graph import *
+from .vertex import *
