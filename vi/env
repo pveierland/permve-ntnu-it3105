@@ -1,8 +1,0 @@
-#!/bin/bash
-
-P1=$(pwd)/$(dirname $BASH_SOURCE)
-pushd `dirname ${P1}` > /dev/null
-P2=`pwd`
-popd > /dev/null
-
-export PYTHONPATH=${P2}:${PYTHONPATH}
