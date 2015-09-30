@@ -2,7 +2,7 @@ import itertools
 
 def revise_star(focal_variable, constraint, network):
     def domain_cross_product(focal_value):
-        return (dict(itertools.izip(
+        return (dict(zip(
             itertools.chain(non_focal_domains, {focal_variable: focal_value}), x))
             for x in itertools.product(
                 *itertools.chain(non_focal_domains.values(), [[focal_value]])))
