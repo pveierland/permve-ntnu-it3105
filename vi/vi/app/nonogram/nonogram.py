@@ -366,10 +366,10 @@ class NonogramApplication(QMainWindow):
         #        "Expansion of node with state ({0},{1}) completed.".format(
         #            search.info[0].state.x, search.info[0].state.y))
 
-def main():
-    app = QApplication(sys.argv)
-    search_application = NonogramApplication()
-    sys.exit(app.exec_())
-
-if __name__ == '__main__':
-    main()
+#def main():
+#    app = QApplication(sys.argv)
+#    search_application = NonogramApplication()
+#    sys.exit(app.exec_())
+#
+#if __name__ == '__main__':
+#    main()
