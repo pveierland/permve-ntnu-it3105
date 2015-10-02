@@ -1,43 +1,168 @@
 import itertools
 import sys
 
-def build_domain(dimension, spec):
-    def satisfies(state, spec):
-        truths = 0
-        s      = 0
+#def build_domain(dimension, spec):
+#    def satisfies(state, spec):
+#        truths = 0
+#        s      = 0
+#
+#        for index, value in enumerate(state):
+#            if value:
+#                truths = truths + 1
+#
+#            segment_complete = (not value) or (index == len(state) - 1)
+#
+#            if segment_complete:
+#                segment_is_match = s != len(spec) and truths == spec[s]
+#
+#                if segment_is_match:
+#                    s = s + 1
+#                    truths = 0
+#                elif truths != 0:
+#                    return False
+#
+#        return s == len(spec) and truths == 0
+#
+#    return [ state
+#             for state in itertools.product([False, True], repeat=dimension)
+#             if satisfies(state, spec) ]
 
-        for index, value in enumerate(state):
-            if value:
-                truths = truths + 1
+#def build_domain(dimension, spec):
+#    def satisfies(state, spec):
+#        truths = 0
+#        s      = 0
+#
+#        for index, value in enumerate(state):
+#            if value:
+#                truths = truths + 1
+#
+#            segment_complete = (not value) or (index == len(state) - 1)
+#
+#            if segment_complete:
+#                segment_is_match = s != len(spec) and truths == spec[s]
+#
+#                if segment_is_match:
+#                    s = s + 1
+#                    truths = 0
+#                elif truths != 0:
+#                    return False
+#
+#        return s == len(spec) and truths == 0
+#
+#    return [ state
+#             for state in itertools.product([False, True], repeat=dimension)
+#             if satisfies(state, spec) ]
 
-            segment_complete = (not value) or (index == len(state) - 1)
+def is_valid_pattern(dimension, spec, pattern):
+    num_specs = len(spec)
+    s = 0
+    i = dimension - 1
 
-            if segment_complete:
-                segment_is_match = s != len(spec) and truths == spec[s]
+    #print("SATISFY THIS! dimension={0} spec={1} pattern={2}", dimension, spec, pattern)
 
-                if segment_is_match:
-                    s = s + 1
-                    truths = 0
-                elif truths != 0:
+    while True:
+        #input("Press Enter to continue...")
+        #print('i={0}'.format(i))
+        if pattern & (1 << i) != 0:
+            #print('{0:b} is ONE'.format(pattern))
+            l = spec[s]
+            for j in range(1, l):
+                if pattern & (1 << (i - j)) == 0:
+                    ##print("ALPHA")
+                    return False
+            else:
+                ##print('i={0} j={1}'.format(i, j))
+                if i > l - 1 and pattern & (1 << (i - l)) != 0:
                     return False
 
-        return s == len(spec) and truths == 0
+                i = i - l - 1
+                s = s + 1
 
-    return [ state
-             for state in itertools.product([False, True], repeat=dimension)
-             if satisfies(state, spec) ]
+                if s == num_specs:
+                    break
+        else:
+            if i == 0:
+                break
+            else:
+                i = i - 1
+
+    if i > 0 and pattern & ((1 << i) - 1) != 0:
+        ##print("BOOM")
+        return False
+
+    return s == num_specs
+
+def build_domain(dimension, spec):
+    # Build first valid bit pattern:
+    num_specs = len(spec)
+    pattern   = (1 << spec[0]) - 1
+
+    for s in spec[1:]:
+        pattern = pattern << (s + 1)
+        pattern = pattern | ((1 << s) - 1)
+
+    while pattern & (1 << dimension) == 0:
+        s = 0
+        i = dimension - 1
+
+        while True:
+            if pattern & (1 << i) != 0:
+                l = spec[s]
+                for j in range(1, l):
+                    if pattern & (1 << (i - j)) == 0:
+                        is_valid = False
+                        break
+                else:
+                    if i > l - 1 and pattern & (1 << (i - l)) != 0:
+                        is_valid = False
+                        break
+
+                    i = i - l - 1
+                    s = s + 1
+
+                    if s == num_specs:
+                        break
+            else:
+                if i == 0:
+                    break
+                else:
+                    i = i - 1
+
+        if i > 0 and pattern & ((1 << i) - 1) != 0:
+            ##print("BOOM")
+            return False
+
+        return s == num_specs
+
+
+    # TEST BIN STRATEGY OR SUCK IT UP
+
+
+
+
+
+
+
+
+        if is_valid_pattern(dimension, spec, pattern):
+            yield int(pattern)
+
+        # Compute the lexicographically next bit permutation
+        # https://graphics.stanford.edu/~seander/bithacks.html
+        t = (pattern | (pattern - 1)) + 1
+        pattern = t | ((((t & -t) // (pattern & -pattern)) >> 1) - 1)
 
 def build_problem(text):
     dimensions, row_specs, column_specs = parse_file(text)
 
     print(dimensions)
 
-    row_domains = [ build_domain(dimensions[0], row_spec)
+    row_domains = [ list(build_domain(dimensions[0], row_spec))
                     for row_spec in row_specs ]
 
-    column_domains = [ build_domain(dimensions[1], column_spec)
+    column_domains = [ list(build_domain(dimensions[1], column_spec))
                        for column_spec in column_specs ]
-    
+
     row_values = sum(len(row_domain) for row_domain in row_domains)
     column_values = sum(len(column_domain) for column_domain in column_domains)
 
@@ -45,18 +170,11 @@ def build_problem(text):
 
     for row in range(len(row_domains)):
         for column, column_domain in enumerate(column_domains):
-            before = row_domains[row]
-            row_domains[row] = reduce_domain(row_domains[row], column_domain, column, row)
-            if not row_domains[row]:
-                print("WTF")
-                print("{0} {1}".format(column, row))
-                print(before)
-                print(column_domain)
-                return
+            row_domains[row] = reduce_domain(row_domains[row], column_domain, column, row, dimensions[0], dimensions[1])
 
     for column in range(len(column_domains)):
         for row, row_domain in enumerate(row_domains):
-            column_domains[column] = reduce_domain(column_domains[column], row_domain, row, column)
+            column_domains[column] = reduce_domain(column_domains[column], row_domain, row, column, dimensions[1], dimensions[0])
 
     row_values = sum(len(row_domain) for row_domain in row_domains)
     column_values = sum(len(column_domain) for column_domain in column_domains)
@@ -67,25 +185,16 @@ def parse_file(text):
     lines = text.splitlines()
 
     dimensions   = list(map(int, lines[0].strip().split()))
-    row_specs    = [ list(map(int, line.strip().split())) for line in lines[1:1+dimensions[1]] ]
+    row_specs    = list(reversed(list(list(map(int, line.strip().split())) for line in lines[1:1+dimensions[1]])))
     column_specs = [ list(map(int, line.strip().split()))
                      for line in lines[1+dimensions[1]:1+dimensions[0]+dimensions[1]] ]
 
     return dimensions, row_specs, column_specs
 
-def reduce_domain(domain_a, domain_b, index_a, index_b):
-    #print("{0} {1} {2} {3}".format(index_a, len(domain_a[0]), index_b, len(domain_b[0])))
-    if len(domain_a) == 0 or len(domain_b) == 0:
-        print("REDUCE {0} {1}".format(len(domain_a), len(domain_b)))
-        print("{0} {1}".format(index_a, index_b))
-        sys.exit(1)
-    #print("{0} {1} {2} {3}".format(index_a, len(domain_a[0]), index_b, len(domain_b[0])))
-    if all(b[index_b] for b in domain_b):
-        print("ALL")
-        return [a for a in domain_a if a[index_a]]
-    elif not any(b[index_b] for b in domain_b):
-        print("NONE")
-        return [a for a in domain_a if not a[index_a]]
+def reduce_domain(domain_a, domain_b, index_a, index_b, dimension_a, dimension_b):
+    if all(b & (1 << (dimension_b - index_b - 1)) != 0 for b in domain_b):
+        return [a for a in domain_a if a & (1 << (dimension_a - index_a - 1)) != 0]
+    elif not any(b & (1 << (dimension_b - index_b - 1)) != 0 for b in domain_b):
+        return [a for a in domain_a if not a & (1 << (dimension_a - index_a - 1)) != 0]
     else:
-        print("WHATEVER")
         return domain_a
