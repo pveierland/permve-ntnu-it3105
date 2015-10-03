@@ -34,10 +34,9 @@ class NonogramWidget(QWidget):
         self.play_thread = None
         self.is_playing  = False
 
+        self.dimensions = None
         self.problem = None
         self.search  = None
-
-        self.nonogram = None
 
         self.frequency = 1
 
@@ -54,17 +53,17 @@ class NonogramWidget(QWidget):
             'generate_node_outline': QColor(243, 115, 56),
             'closed_node':           QColor(175, 238, 238),
             'open_node':             QColor(152, 251, 152),
-            'solution_outline':      QColor(255, 255, 0)
+            'solution_outline':      QColor(255, 255, 0),
+            'bad_times':             QColor(248, 14, 39),   # red
         }
 
     def load(self, filename):
         with open(filename, 'r') as f:
-            self.nonogram = vi.app.nonogram.parse_file(f.read())
-            #self.problem = vi.app.astar_navigation.parse_grid_problem(f.read())
-            #self.search  = vi.search.graph.AStar(self.problem)
+            self.problem, self.dimensions = vi.app.nonogram.build_problem(f.read())
+            self.search  = vi.search.graph.AStar(self.problem)
 
-            #if self.search_state_listener:
-            #    self.search_state_listener(self.search)
+            if self.search_state_listener:
+                self.search_state_listener(self.search)
 
             self.updateGeometry()
             self.update()
@@ -88,12 +87,11 @@ class NonogramWidget(QWidget):
             self.update()
 
     def paintEvent(self, event):
-        pass
-        #def draw_square(coordinate, color):
-        #    painter.fillRect(size * coordinate.x,
-        #                     size * (self.problem.grid.height - coordinate.y - 1),
-        #                     size, size,
-        #                     color)
+        def draw_square(coordinate, color):
+            painter.fillRect(size * coordinate.x,
+                             size * (self.dimensions[1] - coordinate.y - 1),
+                             size, size,
+                             color)
 
         #def draw_outline(coordinate, color):
         #    painter.save()
@@ -110,17 +108,49 @@ class NonogramWidget(QWidget):
         #                     Qt.AlignCenter,
         #                     text)
 
-        #if not self.problem:
-        #    return
+        if not self.problem:
+            return
 
-        #with self.drawing_lock:
-        #    size = self.cell_size
+        with self.drawing_lock:
+            size = self.cell_size
 
-        #    painter = QPainter(self)
-        #    painter.translate(self.margin_size, self.margin_size)
+            painter = QPainter(self)
+            painter.translate(self.margin_size, self.margin_size)
 
-        #    painter.setPen(QPen(QBrush(self.colors['line']), size / 25))
-        #    painter.setFont(QFont('Arial', 8))
+            painter.setPen(QPen(QBrush(self.colors['line']), size / 25))
+            painter.setFont(QFont('Arial', 8))
+
+            domains = sorted((variable.identity, domain)
+                            for variable, domain in self.search.node.state.domains.items())
+
+            for row in range(self.dimensions[1]):
+                for column in range(self.dimensions[0]):
+                    row_agree = all(value & (1 << self.dimensions[0] - column - 1) != 0
+                                     for value in domains[self.dimensions[0] + row][1]) or \
+                                 not any(value & (1 << self.dimensions[0] - column - 1) != 0 \
+                                     for value in domains[self.dimensions[0] + row][1])
+                    row_value = (domains[self.dimensions[0] + row][1][0] & (1 << self.dimensions[0] - column - 1)) != 0
+
+                    column_agree = all(value & (1 << row) != 0
+                                     for value in domains[column][1]) or \
+                                 not any(value & (1 << row) != 0 \
+                                     for value in domains[column][1])
+
+                    column_value = (domains[column][1][0] & (1 << row)) != 0
+
+                    agree = row_agree and column_agree and (row_value == column_value)
+                    value = row_value and column_value
+
+                    if agree:
+                        if value:
+                            draw_square(vi.grid.Coordinate(column, row), self.colors['open_node'])
+                        else:
+                            draw_square(vi.grid.Coordinate(column, row), self.colors['closed_node'])
+                    else:
+                        draw_square(vi.grid.Coordinate(column, row), self.colors['bad_times'])
+
+
+
 
         #    for y in range(self.problem.grid.height):
         #        for x in range(self.problem.grid.width):
@@ -175,8 +205,8 @@ class NonogramWidget(QWidget):
     def sizeHint(self):
         if self.problem:
             offset = 2 * self.margin_size
-            return QSize(offset + self.cell_size * self.problem.grid.width,
-                         offset + self.cell_size * self.problem.grid.height)
+            return QSize(offset + self.cell_size * self.dimensions[0],
+                         offset + self.cell_size * self.dimensions[1])
         else:
             return QSize(0, 0)
 
@@ -334,6 +364,18 @@ class NonogramApplication(QMainWindow):
         closed_node_count = sum(1 for _ in search.closed_list())
         total_node_count  = open_node_count + closed_node_count
 
+        if search.state == vi.search.graph.State.success:
+            self.label_search_state.setText("SUCCESS")
+        elif search.state == vi.search.graph.State.failed:
+            self.label_search_state.setText("FAILED")
+        elif search.state == vi.search.graph.State.start:
+            self.label_search_state.setText("READY TO START")
+        else:
+            self.label_search_state.setText("GG")
+
+
+
+
         #self.label_search_nodes.setText(
         #    "Open nodes: {0}\tClosed nodes: {1}\t Total nodes: {2}".format(
         #        open_node_count, closed_node_count, total_node_count))
@@ -366,10 +408,10 @@ class NonogramApplication(QMainWindow):
         #        "Expansion of node with state ({0},{1}) completed.".format(
         #            search.info[0].state.x, search.info[0].state.y))
 
-#def main():
-#    app = QApplication(sys.argv)
-#    search_application = NonogramApplication()
-#    sys.exit(app.exec_())
-#
-#if __name__ == '__main__':
-#    main()
+def main():
+    app = QApplication(sys.argv)
+    search_application = NonogramApplication()
+    sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    main()
