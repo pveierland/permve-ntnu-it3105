@@ -48,7 +48,7 @@ class SearchProblemWidget(QWidget):
         self.colors = {
             'start':                 QColor(0, 221, 0),
             'goal':                  QColor(238, 68, 0),
-            'line':                  QColor(51, 51, 51),
+            'line':                  QColor(0, 0, 0),
             'expand_node_outline':   QColor(2, 120, 120),
             'generate_node_outline': QColor(243, 115, 56),
             'closed_node':           QColor(175, 238, 238),
@@ -56,10 +56,14 @@ class SearchProblemWidget(QWidget):
             'solution_outline':      QColor(255, 255, 0)
         }
 
+    def __initialize_search(self):
+        self.search = vi.search.graph.BestFirst(self.problem, self.search_strategy) \
+                      if self.problem else None
+
     def load(self, filename):
         with open(filename, 'r') as f:
             self.problem = vi.app.navigation.parse_grid_problem(f.read())
-            self.search  = vi.search.graph.BestFirst(self.problem, self.search_strategy)
+            self.__initialize_search()
 
             if self.search_state_listener:
                 self.search_state_listener(self.search)
@@ -68,17 +72,22 @@ class SearchProblemWidget(QWidget):
             self.update()
 
     def play(self):
+        # Do initial step to trigger new search if already completed
+        self.step()
+
         while self.is_playing and not self.search.is_complete():
-            self.step()
             time.sleep(1 / self.frequency)
+            self.step()
 
         self.set_playing(False)
 
     def step(self):
-        if self.search and not self.search.is_complete():
-
+        if self.search:
             with self.drawing_lock:
-                self.search.step()
+                if not self.search.is_complete():
+                    self.search.step()
+                else:
+                    self.__initialize_search()
 
             if self.search_state_listener:
                 self.search_state_listener(self.search)
@@ -86,24 +95,35 @@ class SearchProblemWidget(QWidget):
             self.update()
 
     def paintEvent(self, event):
+        def draw_square_with_erase(coordinate, color):
+            painter.eraseRect(self.cell_size * coordinate.x,
+                              self.cell_size * (self.problem.grid.height - coordinate.y - 1),
+                              self.cell_size, self.cell_size)
+
+            painter.fillRect(self.cell_size * coordinate.x,
+                             self.cell_size * (self.problem.grid.height - coordinate.y - 1),
+                             self.cell_size, self.cell_size,
+                             color)
+
         def draw_square(coordinate, color):
-            painter.fillRect(size * coordinate.x,
-                             size * (self.problem.grid.height - coordinate.y - 1),
-                             size, size,
+            painter.fillRect(self.cell_size * coordinate.x,
+                             self.cell_size * (self.problem.grid.height - coordinate.y - 1),
+                             self.cell_size, self.cell_size,
                              color)
 
         def draw_outline(coordinate, color):
             painter.save()
-#            painter.setRenderHint(QPainter.Antialiasing, True)
             painter.setPen(QPen(QBrush(color), 5, Qt.SolidLine, Qt.SquareCap, Qt.BevelJoin))
-            painter.drawRect(size * coordinate.x, size * (self.problem.grid.height - coordinate.y - 1),
-                             size, size)
+            painter.drawRect(self.cell_size * coordinate.x,
+                             self.cell_size * (self.problem.grid.height - coordinate.y - 1),
+                             self.cell_size,
+                             self.cell_size)
             painter.restore()
 
         def draw_text(coordinate, text):
-            painter.drawText(QRectF(size * coordinate.x,
-                             size * (self.problem.grid.height - coordinate.y - 1),
-                             size, size),
+            painter.drawText(QRectF(self.cell_size * coordinate.x,
+                             self.cell_size * (self.problem.grid.height - coordinate.y - 1),
+                             self.cell_size, self.cell_size),
                              Qt.AlignCenter,
                              text)
 
@@ -111,13 +131,11 @@ class SearchProblemWidget(QWidget):
             return
 
         with self.drawing_lock:
-            size = self.cell_size
-
             painter = QPainter(self)
-            painter.translate(self.margin_size, self.margin_size)
-
-            painter.setPen(QPen(QBrush(self.colors['line']), size / 25))
+            painter.setPen(QPen(QBrush(self.colors['line']), 1))
             painter.setFont(QFont('Arial', 8))
+
+            painter.translate(self.margin_size, self.margin_size)
 
             for y in range(self.problem.grid.height):
                 for x in range(self.problem.grid.width):
@@ -129,29 +147,52 @@ class SearchProblemWidget(QWidget):
             draw_square(self.problem.goal,  self.colors['goal'])
             draw_text(self.problem.goal,    'GOAL')
 
-            if self.search and self.search.state != vi.search.graph.State.start:
-                for closed_node in self.search.closed_list():
-                    draw_square(closed_node.state, self.colors['closed_node'])
+            if self.search:
+                if self.search.state != vi.search.graph.State.start:
+                    for closed_node in self.search.closed_list():
+                        draw_square(closed_node.state, self.colors['closed_node'])
 
-                for open_node in self.search.open_list():
-                    draw_square(open_node.state, self.colors['open_node'])
+                    for open_node in self.search.open_list():
+                        draw_square(open_node.state, self.colors['open_node'])
 
-            if self.search and self.search.state == vi.search.graph.State.success:
-                for action, state in self.search.info[1].path:
-                    draw_square(state, self.colors['solution_outline'])
+                if (self.search.state is not vi.search.graph.State.start) and \
+                   (self.search.state is not vi.search.graph.State.failed):
 
-            if self.search and self.search.state != vi.search.graph.State.start:
-                for closed_node in self.search.closed_list():
-                    draw_text(closed_node.state, 'g={0}\nh={1:.1f}'.format(closed_node.path_cost, closed_node.heuristic_value))
+                    for action, state in vi.search.graph.Solution(self.search.info[0]).path:
+                        draw_square(state, self.colors['solution_outline'])
 
-                for open_node in self.search.open_list():
-                    draw_text(open_node.state, 'g={0}\nh={1:.1f}'.format(open_node.path_cost, open_node.heuristic_value))
+                if self.search.state != vi.search.graph.State.start:
+                    if self.search.strategy is vi.search.graph.BestFirst.Strategy.astar:
+                        for closed_node in self.search.closed_list():
+                            draw_text(closed_node.state, 'g={0}\nh={1:.0f}'.format(closed_node.path_cost, closed_node.heuristic_value))
+
+                        for open_node in self.search.open_list():
+                            draw_text(open_node.state, 'g={0}\nh={1:.0f}'.format(open_node.path_cost, open_node.heuristic_value))
+                    elif self.search.strategy is vi.search.graph.BestFirst.Strategy.dijkstra:
+                        for closed_node in self.search.closed_list():
+                            draw_text(closed_node.state, 'g={0}'.format(closed_node.path_cost, closed_node.heuristic_value))
+
+                        for open_node in self.search.open_list():
+                            draw_text(open_node.state, 'g={0}'.format(open_node.path_cost, open_node.heuristic_value))
 
             for y in range(self.problem.grid.height + 1):
-                painter.drawLine(0, size * (self.problem.grid.height - y), size * self.problem.grid.width, size * (self.problem.grid.height - y))
+                painter.drawLine(0,
+                                 self.cell_size * (self.problem.grid.height - y),
+                                 self.cell_size * self.problem.grid.width,
+                                 self.cell_size * (self.problem.grid.height - y))
 
             for x in range(self.problem.grid.width + 1):
-                painter.drawLine(size * x, 0, size * x, size * self.problem.grid.height)
+                painter.drawLine(self.cell_size * x,
+                                 0,
+                                 self.cell_size * x,
+                                 self.cell_size * self.problem.grid.height)
+
+            # Hack: Obstacles are redrawn with erase to avoid grid lines in obstacles
+            for y in range(self.problem.grid.height):
+                for x in range(self.problem.grid.width):
+                    cell_value = self.problem.grid.values[y][x]
+                    if cell_value is vi.grid.obstructed:
+                        draw_square_with_erase(vi.grid.Coordinate(x, y), self.cell_colors[cell_value])
 
             if self.search:
                 if self.search.state == vi.search.graph.State.expand_node_begin or \
@@ -190,6 +231,9 @@ class SearchProblemWidget(QWidget):
 
         if self.search:
             with self.drawing_lock:
+                if self.search.is_complete():
+                    self.__initialize_search()
+
                 while not self.search.is_complete():
                     self.search.step()
 
@@ -303,7 +347,7 @@ class SearchApplication(QMainWindow):
         self.combo_box_file_selector_load_values()
 
         self.slider_frequency = QSlider(Qt.Horizontal)
-        self.slider_frequency.setRange(5, 500)
+        self.slider_frequency.setRange(1, 100)
         self.slider_frequency.setTracking(True)
         self.slider_frequency.valueChanged.connect(self.handle_set_frequency)
 
@@ -343,9 +387,8 @@ class SearchApplication(QMainWindow):
             if f.endswith('.txt'):
                 self.combo_box_file_selector.addItem(f)
 
-    def handle_set_frequency(self, value):
-        frequency = value / 10.0
-        self.label_frequency.setText("{0:.1f} Hz".format(frequency))
+    def handle_set_frequency(self, frequency):
+        self.label_frequency.setText("{0} Hz".format(frequency))
         self.search_problem_widget.set_frequency(frequency)
 
     def update_play_state(self, is_playing):
