@@ -6,7 +6,8 @@ class Node(object):
         self.action          = action
         self.path_cost       = path_cost
         self.heuristic_value = heuristic_value
-        self.children        = []
+
+        self.children = []
 
     def __lt__(self, other):
         return self.total_cost_estimate() < other.total_cost_estimate()
@@ -14,11 +15,19 @@ class Node(object):
     def add_child(self, node, action, step_cost):
         self.children.append((node, action, step_cost))
 
+    def apply_heuristic(self, problem):
+        self.heuristic_value = problem.heuristic(self.state) \
+                               if hasattr(problem, 'heuristic') \
+                               else 0
+
     def attach(self, parent, path_cost):
         self.parent    = parent
         self.path_cost = path_cost
 
-    def propagate(self, problem):
+    def clear_heuristic(self):
+        self.heuristic_value = 0
+
+    def propagate(self):
         for child, action, step_cost in self.children:
             new_path_cost = self.path_cost + step_cost
 

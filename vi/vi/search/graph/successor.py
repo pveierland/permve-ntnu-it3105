@@ -9,13 +9,9 @@ class Successor(object):
         self.step_cost = step_cost
 
     def build_node(self):
-        path_cost       = self.parent.path_cost + self.step_cost
-        heuristic_value = self.problem.heuristic(self.state) \
-                          if hasattr(self.problem, 'heuristic') \
-                          else 0
+        path_cost = self.parent.path_cost + self.step_cost
 
         return Node(self.state,
                     self.parent,
                     self.action,
-                    path_cost,
-                    heuristic_value)
+                    path_cost)

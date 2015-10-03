@@ -8,7 +8,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-import vi.app.astar_navigation
+import vi.app.navigation
 import vi.grid
 import vi.search.graph
 import vi.search.grid
@@ -38,6 +38,7 @@ class SearchProblemWidget(QWidget):
         self.search  = None
 
         self.frequency = 1
+        self.search_strategy = vi.search.graph.BestFirst.Strategy.astar
 
         self.cell_colors = {
             -1: QColor(51, 51, 51),
@@ -57,8 +58,8 @@ class SearchProblemWidget(QWidget):
 
     def load(self, filename):
         with open(filename, 'r') as f:
-            self.problem = vi.app.astar_navigation.parse_grid_problem(f.read())
-            self.search  = vi.search.graph.AStar(self.problem)
+            self.problem = vi.app.navigation.parse_grid_problem(f.read())
+            self.search  = vi.search.graph.BestFirst(self.problem, self.search_strategy)
 
             if self.search_state_listener:
                 self.search_state_listener(self.search)
@@ -168,6 +169,14 @@ class SearchProblemWidget(QWidget):
     def set_frequency(self, frequency):
         self.frequency = frequency
 
+    def set_search_strategy(self, is_set, strategy):
+        if is_set:
+            self.search_strategy = strategy
+
+            if self.search:
+                self.search.set_strategy(strategy)
+                self.update()
+
     def sizeHint(self):
         if self.problem:
             offset = 2 * self.margin_size
@@ -236,6 +245,7 @@ class SearchApplication(QMainWindow):
 
         self.setSizePolicy(sizePolicy)
 
+        self.radio_button_astar.setChecked(True)
         self.slider_frequency.setValue(50)
 
         self.setWindowTitle('NTNU IT3105 2015 M1: Navigation -- permve@stud.ntnu.no')
@@ -253,8 +263,24 @@ class SearchApplication(QMainWindow):
 
         self.radio_button_bfs      = QRadioButton("BFS")
         self.radio_button_dfs      = QRadioButton("DFS")
-        self.radio_button_astar    = QRadioButton("A*")
         self.radio_button_dijkstra = QRadioButton("Dijkstra")
+        self.radio_button_astar    = QRadioButton("A*")
+
+        self.radio_button_bfs.toggled.connect(
+            lambda is_set: self.search_problem_widget.set_search_strategy(
+                is_set, vi.search.graph.BestFirst.Strategy.breadth_first))
+
+        self.radio_button_dfs.toggled.connect(
+            lambda is_set: self.search_problem_widget.set_search_strategy(
+                is_set, vi.search.graph.BestFirst.Strategy.depth_first))
+
+        self.radio_button_dijkstra.toggled.connect(
+            lambda is_set: self.search_problem_widget.set_search_strategy(
+                is_set, vi.search.graph.BestFirst.Strategy.dijkstra))
+
+        self.radio_button_astar.toggled.connect(
+            lambda is_set: self.search_problem_widget.set_search_strategy(
+                is_set, vi.search.graph.BestFirst.Strategy.astar))
 
         self.button_group_algorithms = QButtonGroup()
         self.button_group_algorithms.addButton(self.radio_button_bfs)
@@ -265,8 +291,8 @@ class SearchApplication(QMainWindow):
         layout = QVBoxLayout()
         layout.addWidget(self.radio_button_bfs)
         layout.addWidget(self.radio_button_dfs)
-        layout.addWidget(self.radio_button_astar)
         layout.addWidget(self.radio_button_dijkstra)
+        layout.addWidget(self.radio_button_astar)
 
         self.group_box_algorithm = QGroupBox("Algorithm")
         self.group_box_algorithm.setLayout(layout)

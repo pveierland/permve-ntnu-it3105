@@ -6,6 +6,4 @@ from .action import *
 from .problem import *
 from .state import *
 
-from .astar import *
-from .breadth_first import *
-from .depth_first import *
+from .best_first import *
