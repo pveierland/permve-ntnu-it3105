@@ -4,7 +4,7 @@ class Variable(object):
         self.constraints = constraints or set()
 
     def __eq__(self, other):
-        return self.identity == other.identity
+        return self.identity == (other.identity if other is Variable else other)
 
     def __hash__(self):
         return hash(self.identity)

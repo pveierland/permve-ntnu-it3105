@@ -28,7 +28,7 @@ class NonogramWidget(QWidget):
 
         self.drawing_lock = threading.Lock()
 
-        self.cell_size   = 42
+        self.cell_size   = 22
         self.margin_size = 2
 
         self.play_thread = None
@@ -93,13 +93,24 @@ class NonogramWidget(QWidget):
                              size, size,
                              color)
 
-        #def draw_outline(coordinate, color):
-        #    painter.save()
-#       #     painter.setRenderHint(QPainter.Antialiasing, True)
-        #    painter.setPen(QPen(QBrush(color), 5, Qt.SolidLine, Qt.SquareCap, Qt.BevelJoin))
-        #    painter.drawRect(size * coordinate.x, size * (self.problem.grid.height - coordinate.y - 1),
-        #                     size, size)
-        #    painter.restore()
+        def draw_outline(variable_identity, color):
+            painter.save()
+            painter.setPen(QPen(QBrush(color), 5, Qt.SolidLine, Qt.SquareCap, Qt.BevelJoin))
+
+            if variable_identity[0] is vi.app.nonogram.Dimension.column:
+                # Drawing column outline
+                painter.drawRect(size * variable_identity[1], 0,
+                                 size, size * self.dimensions[1])
+            else:
+                # Drawing row outline
+                painter.drawRect(0, size * (self.dimensions[1] - variable_identity[1] - 1),
+                                 size * self.dimensions[0], size)
+
+            painter.restore()
+
+
+
+
 
         #def draw_text(coordinate, text):
         #    painter.drawText(QRectF(size * coordinate.x,
@@ -120,23 +131,29 @@ class NonogramWidget(QWidget):
             painter.setPen(QPen(QBrush(self.colors['line']), size / 25))
             painter.setFont(QFont('Arial', 8))
 
-            domains = sorted((variable.identity, domain)
-                            for variable, domain in self.search.node.state.domains.items())
+#            domains = sorted((variable.identity, domain)
+#                             for variable, domain in .items())
+
+            domains = self.search.node.state.domains
 
             for row in range(self.dimensions[1]):
+                row_domain = domains[(vi.app.nonogram.Dimension.row, row)]
+
                 for column in range(self.dimensions[0]):
                     row_agree = all(value & (1 << self.dimensions[0] - column - 1) != 0
-                                     for value in domains[self.dimensions[0] + row][1]) or \
+                                     for value in row_domain) or \
                                  not any(value & (1 << self.dimensions[0] - column - 1) != 0 \
-                                     for value in domains[self.dimensions[0] + row][1])
-                    row_value = (domains[self.dimensions[0] + row][1][0] & (1 << self.dimensions[0] - column - 1)) != 0
+                                     for value in row_domain)
+                    row_value = (row_domain[0] & (1 << self.dimensions[0] - column - 1)) != 0
+                    
+                    column_domain = domains[(vi.app.nonogram.Dimension.column, column)]
 
                     column_agree = all(value & (1 << row) != 0
-                                     for value in domains[column][1]) or \
+                                     for value in column_domain) or \
                                  not any(value & (1 << row) != 0 \
-                                     for value in domains[column][1])
+                                     for value in column_domain)
 
-                    column_value = (domains[column][1][0] & (1 << row)) != 0
+                    column_value = (column_domain[0] & (1 << row)) != 0
 
                     agree = row_agree and column_agree and (row_value == column_value)
                     value = row_value and column_value
@@ -149,7 +166,16 @@ class NonogramWidget(QWidget):
                     else:
                         draw_square(vi.grid.Coordinate(column, row), self.colors['bad_times'])
 
-
+            if self.search:
+                if self.search.state == vi.search.graph.State.expand_node_begin or \
+                   self.search.state == vi.search.graph.State.generate_nodes or \
+                   self.search.state == vi.search.graph.State.expand_node_complete:
+                    action = self.search.info[0].action
+                    if action:
+                        draw_outline(action[0].identity, self.colors['expand_node_outline'])
+                if self.search.state == vi.search.graph.State.generate_nodes:
+                    action = self.search.info[1].action
+                    draw_outline(action[0].identity, self.colors['generate_node_outline'])
 
 
         #    for y in range(self.problem.grid.height):
@@ -240,7 +266,7 @@ class NonogramApplication(QMainWindow):
     def __init__(self):
         super(NonogramApplication, self).__init__()
 
-        self.search_problem_widget = NonogramWidget(
+        self.nonogram_widget = NonogramWidget(
             self, self.update_search_state, self.update_play_state)
 
         self.label_search_state = QLabel()
@@ -254,7 +280,7 @@ class NonogramApplication(QMainWindow):
         top_layout.addStretch(1)
 
         middle_layout = QHBoxLayout()
-        middle_layout.addWidget(self.search_problem_widget)
+        middle_layout.addWidget(self.nonogram_widget)
         middle_layout.addLayout(top_layout)
 
         layout = QVBoxLayout()
@@ -307,7 +333,7 @@ class NonogramApplication(QMainWindow):
 
     def initialize_group_box_control(self):
         self.combo_box_file_selector = QComboBox()
-        self.combo_box_file_selector.activated[str].connect(self.search_problem_widget.load)
+        self.combo_box_file_selector.activated[str].connect(self.nonogram_widget.load)
         self.combo_box_file_selector_load_values()
 
         self.slider_frequency = QSlider(Qt.Horizontal)
@@ -322,13 +348,13 @@ class NonogramApplication(QMainWindow):
         layout_slider.addWidget(self.label_frequency)
 
         self.button_step  = QPushButton("Step")
-        self.button_step.clicked.connect(self.search_problem_widget.step)
+        self.button_step.clicked.connect(self.nonogram_widget.step)
 
         self.button_play  = QPushButton("Play")
-        self.button_play.clicked.connect(self.search_problem_widget.toggle_play)
+        self.button_play.clicked.connect(self.nonogram_widget.toggle_play)
 
         self.button_solve = QPushButton("Solve")
-        self.button_solve.clicked.connect(self.search_problem_widget.solve)
+        self.button_solve.clicked.connect(self.nonogram_widget.solve)
 
         layout_buttons = QHBoxLayout()
         layout_buttons.addWidget(self.button_step)
@@ -344,7 +370,7 @@ class NonogramApplication(QMainWindow):
         self.group_box_control.setLayout(layout)
 
     def closeEvent(self, e):
-        self.search_problem_widget.stop()
+        self.nonogram_widget.stop()
 
     def combo_box_file_selector_load_values(self):
         for f in sorted(filter(os.path.isfile, os.listdir('.'))):
@@ -354,59 +380,62 @@ class NonogramApplication(QMainWindow):
     def handle_set_frequency(self, value):
         frequency = value / 10.0
         self.label_frequency.setText("{0:.1f} Hz".format(frequency))
-        self.search_problem_widget.set_frequency(frequency)
+        self.nonogram_widget.set_frequency(frequency)
 
     def update_play_state(self, is_playing):
         self.button_play.setText("Play" if not is_playing else "Stop")
 
     def update_search_state(self, search):
+        def format_node(n):
+            if not n.action:
+                return "NO ASSUMPTIONS"
+            else:
+                variable_identity = n.action[0].identity
+                assumed_value     = n.action[1]
+                is_column         = variable_identity[0] is vi.app.nonogram.Dimension.column
+                index             = variable_identity[1]
+                dimension         = self.nonogram_widget.dimensions[1] if is_column else \
+                                    self.nonogram_widget.dimensions[0]
+
+                return "ASSUMPTION {0}{1} is {2}".format(
+                    'Column' if is_column else 'Row',
+                    index,
+                    '{0:b}'.format(assumed_value).zfill(dimension))
+
         open_node_count   = sum(1 for _ in search.open_list())
         closed_node_count = sum(1 for _ in search.closed_list())
         total_node_count  = open_node_count + closed_node_count
 
-        if search.state == vi.search.graph.State.success:
-            self.label_search_state.setText("SUCCESS")
+        self.label_search_nodes.setText(
+            "Open nodes: {0}\tClosed nodes: {1}\t Total nodes: {2}".format(
+                open_node_count, closed_node_count, total_node_count))
+
+        if search.state == vi.search.graph.State.start:
+            self.label_search_state.setText(
+                "Starting search node has {0}.".format(
+                    format_node(search.info[0])))
+        elif search.state == vi.search.graph.State.success:
+            self.label_search_state.setText(
+                "Success! Solution path with path cost {0} was found.".format(
+                    search.info[1].cost))
         elif search.state == vi.search.graph.State.failed:
-            self.label_search_state.setText("FAILED")
-        elif search.state == vi.search.graph.State.start:
-            self.label_search_state.setText("READY TO START")
-        else:
-            self.label_search_state.setText("GG")
-
-
-
-
-        #self.label_search_nodes.setText(
-        #    "Open nodes: {0}\tClosed nodes: {1}\t Total nodes: {2}".format(
-        #        open_node_count, closed_node_count, total_node_count))
-
-        #if search.state == vi.search.graph.State.start:
-        #    self.label_search_state.setText(
-        #        "Starting search node has state ({0},{1}).".format(
-        #            search.info[0].state.x, search.info[0].state.y))
-        #elif search.state == vi.search.graph.State.success:
-        #    self.label_search_state.setText(
-        #        "Success! Solution path to goal state ({0},{1}) with cost {2} was found.".format(
-        #            search.info[0].state.x, search.info[0].state.y,
-        #            search.info[1].cost))
-        #elif search.state == vi.search.graph.State.failed:
-        #    self.label_search_state.setText(
-        #        "Failure! No solution could be found.")
-        #elif search.state == vi.search.graph.State.expand_node_begin:
-        #    self.label_search_state.setText(
-        #        "Expanding node with state ({0},{1}).".format(
-        #            search.info[0].state.x, search.info[0].state.y))
-        #elif search.state == vi.search.graph.State.generate_nodes:
-        #    node, successor, is_unique = search.info
-        #    self.label_search_state.setText(
-        #        "Generated {0} successor state ({1},{2}) from node with state ({3},{4}).".format(
-        #            "unique" if is_unique else "existing",
-        #            successor.state.x, successor.state.y,
-        #            node.state.x, node.state.y))
-        #elif search.state == vi.search.graph.State.expand_node_complete:
-        #    self.label_search_state.setText(
-        #        "Expansion of node with state ({0},{1}) completed.".format(
-        #            search.info[0].state.x, search.info[0].state.y))
+            self.label_search_state.setText(
+                "Failure! No solution could be found.")
+        elif search.state == vi.search.graph.State.expand_node_begin:
+            self.label_search_state.setText(
+                "Expanding node with {0}.".format(
+                    format_node(search.info[0])))
+        elif search.state == vi.search.graph.State.generate_nodes:
+            node, successor, is_unique = search.info
+            self.label_search_state.setText(
+                "Generated {0} successor with {1} from node with {2}.".format(
+                    "unique" if is_unique else "existing",
+                    format_node(successor),
+                    format_node(node)))
+        elif search.state == vi.search.graph.State.expand_node_complete:
+            self.label_search_state.setText(
+                "Expansion of node with {0} completed.".format(
+                    format_node(search.info[0])))
 
 def main():
     app = QApplication(sys.argv)

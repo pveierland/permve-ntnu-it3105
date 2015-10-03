@@ -1,9 +1,15 @@
+from enum import Enum
+
 import collections
 import itertools
 import sys
 
 import vi.csp
 import vi.search.gac
+
+class Dimension(Enum):
+    column = 1
+    row    = 2
 
 def veritas(values, row_variable, column_variable, row_index, column_index):
     print("VERITAS row_variable={0} column_variable={1} row_index={2} column_index={3} values={4}".format(
@@ -25,9 +31,10 @@ def build_constraints(row_variables, column_variables, row_domains, column_domai
                        column_variable=column_variables[column],
                        row_index=(1 << (width - column - 1)),
                        column_index=(1 << row):
-                        veritas(values, row_variable, column_variable, row_index, column_index))
-#                    ((values[row_variable] & row_index) != 0) == \
-#                    ((values[column_variable] & column_index) != 0))
+                    ((values[row_variable] & row_index) != 0) == \
+                    ((values[column_variable] & column_index) != 0))
+
+            #veritas(values, row_variable, column_variable, row_index, column_index))
 
             row_variables[row].constraints.add(constraint)
             column_variables[column].constraints.add(constraint)
@@ -138,21 +145,21 @@ def build_problem(text):
 
     print("\nrow_values = {0}, column_values = {1}".format(row_values, column_values))
 
-    for row in range(len(row_domains)):
-        for column, column_domain in enumerate(column_domains):
-            row_domains[row] = reduce_row_domain(row_domains[row], column_domain, row, column, dimensions[0], dimensions[1])
-
-    for column in range(len(column_domains)):
-        for row, row_domain in enumerate(row_domains):
-            column_domains[column] = reduce_column_domain(row_domain, column_domains[column], row, column, dimensions[0], dimensions[1])
+#    for row in range(len(row_domains)):
+#        for column, column_domain in enumerate(column_domains):
+#            row_domains[row] = reduce_row_domain(row_domains[row], column_domain, row, column, dimensions[0], dimensions[1])
+#
+#    for column in range(len(column_domains)):
+#        for row, row_domain in enumerate(row_domains):
+#            column_domains[column] = reduce_column_domain(row_domain, column_domains[column], row, column, dimensions[0], dimensions[1])
 
     row_values = sum(len(row_domain) for row_domain in row_domains)
     column_values = sum(len(column_domain) for column_domain in column_domains)
 
     print("\nrow_values = {0}, column_values = {1}".format(row_values, column_values))
 
-    row_variables    = [ vi.csp.Variable('row{0}'.format(row)) for row in range(dimensions[1]) ]
-    column_variables = [ vi.csp.Variable('col{0}'.format(column)) for column in range(dimensions[0]) ]
+    row_variables    = [ vi.csp.Variable((Dimension.row, row)) for row in range(dimensions[1]) ]
+    column_variables = [ vi.csp.Variable((Dimension.column, column)) for column in range(dimensions[0]) ]
 
     variables = row_variables + column_variables
 
@@ -192,14 +199,6 @@ def parse_file(text):
                      for line in lines[1+dimensions[1]:1+dimensions[0]+dimensions[1]] ]
 
     return dimensions, row_specs, column_specs
-
-#def reduce_domain(domain_a, domain_b, index_a, index_b, dimension_a, dimension_b):
-#    if all(b & (1 << (dimension_b - index_b - 1)) != 0 for b in domain_b):
-#        return [a for a in domain_a if a & (1 << (dimension_a - index_a - 1)) != 0]
-#    elif not any(b & (1 << (dimension_b - index_b - 1)) != 0 for b in domain_b):
-#        return [a for a in domain_a if not a & (1 << (dimension_a - index_a - 1)) != 0]
-#    else:
-#        return domain_a
 
 def reduce_column_domain(row_domain, column_domain, row, column, width, height):
     if all(row_values & (1 << (width - column - 1)) != 0 for row_values in row_domain):
