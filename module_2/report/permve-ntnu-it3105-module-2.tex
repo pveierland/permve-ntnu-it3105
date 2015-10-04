@@ -13,9 +13,36 @@ Search\\
 
 \date{\normalsize\today}
 
+\newacro{CSP}{Constraint Satisfaction Problem}
+\newacro{GAC}{General Arc Consistency}
+
 \begin{document}
 
 \maketitle
+
+\newpage
+
+\section*{Generality of A* implementation}
+
+\section*{Generality of A*-GAC implementation}
+
+The \ac{CSP} and \ac{GAC} related code is implemented in the \texttt{vi.csp} namespace. A \texttt{Network} object holds all \texttt{Variable} and \texttt{Constraint} objects, as well as a \texttt{domains} mapping from \texttt{Variable} objects to the domains of the variables. The values within a domain can be of any type. Also within the \texttt{vi.csp} namespace are the functions implementing \textsc{REVISE*} and \ac{GAC}. None of this code is tied to search code; and it can be used in full isolation where needed.
+
+A \texttt{Constraint} holds the list of variables it is linked to, as well as a condition which can be evaluated. A \texttt{Variable} has an identity which can be of any type suiting the problem, as well as the list of contraints it is involved in.
+
+Fusing the \ac{GAC} algorithm with \textit{A*} is done by the \texttt{vi.search.gac.Problem} class, which is constructed from a \texttt{vi.csp.Network} object. The \texttt{Network} object serves as the state of each search node.
+
+No problem specific code exists in the \texttt{vi.search.gac.Problem} class. It has a goal test which checks that all domains in the current state has a size of one. It has a heuristic which returns the sum of the length of all domains minus one. The initial search node returned from the \texttt{Problem} class is simply the initial network passed through one iteration of the \texttt{general\_arc\_consistency} function.
+
+The crucial part of the \texttt{Problem} class implementation lies in the \texttt{successors} method. All successors generated from a search node is based on assumptions made about a single variable. The implementation selects the variable which has the smallest domain which contains more than one value. A successor state is generated for each value in the assumed variable's domain. The \ac{GAC} domain filtering loop is then warm rebooted to revise the domains of all variables which share a constraint with the assumed variable.
+
+\section*{Code chunks}
+
+In the given implementation a \texttt{Constraint} class instance holds a single condition and a list of variables involved in the condition. The condition must be callable and must accept one parameter. The parameter passed to a condition is a mapping of variables to specific values for all variables involved in the condition. This makes the \texttt{Constraint} interface very general and allows any hashable type to be used as \texttt{Variable} identities and in variable domains.
+
+Since all variables involved in a \texttt{Constraint} is explicitly specified it is very simple to generate the required permutations of values from variable domains in the \textsc{REVISE*} algorithm.
+
+The interface was chosen for its semantical purity and generality. It can be used with both interpreters parsing user input as well as direct \texttt{eval} approaches simply by adding code to build the necessary \texttt{Constraint} objects and callable conditions. Since no parsing of user input was necessary for the given problem; only a simple lambda verifying the inequality of two variable values in the given value set was used.
 
 \end{document}
 
