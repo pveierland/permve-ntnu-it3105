@@ -8,7 +8,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-import vi.app.astar_gac_vertex_coloring
+import vi.app.vertex_coloring
 import vi.csp
 import vi.graph
 import vi.search.graph
@@ -36,7 +36,7 @@ class VertexColoringWidget(QWidget):
         self.search  = None
         self.graph = None
 
-        self.vertex_radii = 3.0
+        self.vertex_radii = 4.0
         self.frequency    = 1
         self.k            = 4
 
@@ -50,7 +50,7 @@ class VertexColoringWidget(QWidget):
         self.colors = {
             'start':                 QColor(0, 221, 0),
             'goal':                  QColor(238, 68, 0),
-            'line':                  QColor(51, 51, 51),
+            'line':                  QColor(51, 51, 51, 100),
             'expand_node_outline':   QColor(2, 120, 120),
             'generate_node_outline': QColor(243, 115, 56),
             'closed_node':           QColor(175, 238, 238),
@@ -83,11 +83,12 @@ class VertexColoringWidget(QWidget):
     def __init_problem(self, k=None):
         if self.filename:
             self.problem, self.k, self.boundaries = \
-                vi.app.astar_gac_vertex_coloring.build_vertex_coloring_problem_from_file(
+                vi.app.vertex_coloring.build_vertex_coloring_problem_from_file(
                     self.filename, k)
 
     def __init_search(self):
-        self.search = vi.search.graph.AStar(self.problem)
+        self.search = vi.search.graph.BestFirst(
+            self.problem, vi.search.graph.BestFirst.Strategy.astar)
 
         if self.search_state_listener:
             self.search_state_listener(self.search)
@@ -112,7 +113,7 @@ class VertexColoringWidget(QWidget):
                 painter.setBrush(QBrush(Qt.white))
                 painter.drawRect(event.rect())
 
-                painter.setPen(QPen(Qt.black, 0))
+                painter.setPen(QPen(self.colors['line'], 0))
                 painter.setBrush(QBrush(Qt.black, Qt.SolidPattern))
 
                 size = self.size()
@@ -133,6 +134,8 @@ class VertexColoringWidget(QWidget):
 
                     painter.drawLine(QPointF(vertex_a.x, vertex_a.y),
                                      QPointF(vertex_b.x, vertex_b.y))
+
+                painter.setPen(QPen(Qt.black, 0))
 
                 # Sort vertices before drawing for prettiness:
                 for variable, domain in sorted(network.domains.items(),
@@ -280,7 +283,7 @@ class VertexColoringApplication(QMainWindow):
         layout_input.addWidget(self.spinbox_k)
 
         self.slider_frequency = QSlider(Qt.Horizontal)
-        self.slider_frequency.setRange(5, 1000)
+        self.slider_frequency.setRange(1, 100)
         self.slider_frequency.setTracking(True)
         self.slider_frequency.valueChanged.connect(self.handle_set_frequency)
 
@@ -316,15 +319,32 @@ class VertexColoringApplication(QMainWindow):
             if f.endswith('.txt'):
                 self.combo_box_file_selector.addItem(f)
 
-    def handle_set_frequency(self, value):
-        frequency = value / 10.0
-        self.label_frequency.setText("{0:.1f} Hz".format(frequency))
+    def handle_set_frequency(self, frequency):
+        self.label_frequency.setText("{0} Hz".format(frequency))
         self.vertex_coloring_widget.set_frequency(frequency)
 
     def update_k_state(self, k):
         self.spinbox_k.setValue(k)
 
+    def update_play_state(self, is_playing):
+        self.button_play.setText("Play" if not is_playing else "Stop")
+
     def update_search_state(self, search):
+        def build_completed_summary():
+            if not search.node:
+                return ""
+
+            unsatisfied_constraints = \
+                sum(not constraint(search.node.state.domains)
+                    for constraint in search.node.state.constraints)
+
+            num_vertices_without_color = \
+                sum(len(domain) != 1
+                    for domain in search.node.state.domains.values())
+
+            return "  Unsatisfied constraints: {0}  Vertices without color: {1}".format(
+                unsatisfied_constraints, num_vertices_without_color)
+
         def format_node(n):
             if not n.action:
                 return "NO ASSUMPTIONS"
@@ -338,7 +358,7 @@ class VertexColoringApplication(QMainWindow):
         total_node_count  = open_node_count + closed_node_count
 
         self.label_search_nodes.setText(
-            "Open nodes: {0}\tClosed nodes: {1}\t Total nodes: {2}".format(
+            "Open nodes: {0}  Closed nodes: {1}  Total nodes: {2}".format(
                 open_node_count, closed_node_count, total_node_count))
 
         if search.state == vi.search.graph.State.start:
@@ -347,11 +367,13 @@ class VertexColoringApplication(QMainWindow):
                     format_node(search.info[0])))
         elif search.state == vi.search.graph.State.success:
             self.label_search_state.setText(
-                "Success! Solution path with path cost {0} was found.".format(
-                    search.info[1].cost))
+                "Success! Solution path with path cost {0} was found.{1}".format(
+                    search.info[1].cost,
+                    build_completed_summary()))
         elif search.state == vi.search.graph.State.failed:
             self.label_search_state.setText(
-                "Failure! No solution could be found.")
+                "Failure! No solution could be found.{0}".format(
+                    build_completed_summary()))
         elif search.state == vi.search.graph.State.expand_node_begin:
             self.label_search_state.setText(
                 "Expanding node with {0}.".format(
@@ -367,9 +389,6 @@ class VertexColoringApplication(QMainWindow):
             self.label_search_state.setText(
                 "Expansion of node with {0} completed.".format(
                     format_node(search.info[0])))
-
-    def update_play_state(self, is_playing):
-        self.button_play.setText("Play" if not is_playing else "Stop")
 
 def main():
     app = QApplication(sys.argv)

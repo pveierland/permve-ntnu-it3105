@@ -1,7 +1,7 @@
 import collections
 import re
 
-import iv.csp
+import vi.csp
 import vi.graph
 
 VertexPoint     = collections.namedtuple('VertexPoint', ['i', 'x', 'y'])

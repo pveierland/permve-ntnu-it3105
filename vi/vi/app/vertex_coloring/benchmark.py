@@ -1,6 +1,6 @@
 import sys
 
-import vi.app.astar_gac_vertex_coloring
+import vi.app.vertex_coloring
 import vi.csp
 import vi.graph
 import vi.search.graph
@@ -55,7 +55,7 @@ def update_search_state(state, info):
 
 
 with open(sys.argv[1], 'r') as f:
-    graph = vi.app.astar_gac_vertex_coloring.parse_graph_file(f.readlines())
+    graph = vi.app.vertex_coloring.parse_graph_file(f.readlines())
 
     variables = { vertice: vi.csp.Variable(vertice)
                   for vertice in graph.vertices }
@@ -86,7 +86,7 @@ with open(sys.argv[1], 'r') as f:
 
     network = vi.csp.Network(set(variables.values()), domains)
     problem = vi.search.gac.Problem(network)
-    search = vi.search.graph.AStar(problem)
+    search = vi.search.graph.BestFirst(problem, vi.search.graph.BestFirst.astar)
 
     print("file: {0} K: {1}".format(sys.argv[1], sys.argv[2]))
 

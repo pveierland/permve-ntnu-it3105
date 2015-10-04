@@ -11,14 +11,6 @@ class Dimension(Enum):
     column = 1
     row    = 2
 
-def veritas(values, row_variable, column_variable, row_index, column_index):
-    print("VERITAS row_variable={0} column_variable={1} row_index={2} column_index={3} values={4}".format(
-        row_variable.identity, column_variable.identity, row_index, column_index, ''.join('{0}:{1}'.format(a.identity, b) for a, b in values.items())))
-    truth = ((values[row_variable] & row_index) != 0) == ((values[column_variable] & column_index) != 0)
-
-    print("TRUE" if truth else "FALSE")
-    return truth
-
 def build_constraints(row_variables, column_variables, row_domains, column_domains, width, height):
     constraints = []
 
@@ -34,89 +26,11 @@ def build_constraints(row_variables, column_variables, row_domains, column_domai
                     ((values[row_variable] & row_index) != 0) == \
                     ((values[column_variable] & column_index) != 0))
 
-            #veritas(values, row_variable, column_variable, row_index, column_index))
-
             row_variables[row].constraints.add(constraint)
             column_variables[column].constraints.add(constraint)
             constraints.append(constraint)
 
     return constraints
-
-
-
-
-#    constraints = {}
-#
-#    print("COLUMN DOMAINS")
-#
-#    for cd in column_domains:
-#        print(' '.join('{0:b}'.format(c) for c in cd))
-#
-#    print()
-#    print("ROW DOMAINS")
-#
-#    for rd in row_domains:
-#        print(' '.join('{0:b}'.format(r) for r in rd))
-#
-#    print()
-#    print()
-#
-#    for row, row_domain in enumerate(row_domains):
-#        # Use basic calculation to get superset of needed constraints:
-#        s = 0
-#        for r in range(0, len(row_domain)):
-#            s = s ^ row_domain[r]
-#
-#        for column in range(width):
-#            if s & (1 << (width - column - 1)) != 0:
-#                if not (row, column) in constraints:
-#                    constraint = vi.csp.Constraint(
-#                        [row_variables[row], column_variables[column]],
-#                        lambda values,
-#                               row_variable=row_variables[row],
-#                               column_variable=column_variables[column],
-#                               row_index=(1 << (width - column - 1)),
-#                               column_index=(1 << row):
-#                            ((values[row_variable] & row_index) != 0) == \
-#                            ((values[column_variable] & column_index) != 0))
-#
-##veritas(values, row_variable, column_variable, row_index, column_index))
-#
-#                    row_variables[row].constraints.add(constraint)
-#                    column_variables[column].constraints.add(constraint)
-#                    constraints[(row, column)] = constraint
-#
-#    for column, column_domain in enumerate(column_domains):
-#        # Use basic calculation to get superset of needed constraints:
-#        s = 0
-#        for r in range(0, len(column_domain)):
-#            s = s ^ column_domain[r]
-#
-#        for row in range(height):
-#            if s & (1 << row) != 0:
-#                if not (row, column) in constraints:
-#                    print("LINK row={0} with column={1}".format(row, column))
-#                    constraint = vi.csp.Constraint(
-#                        [column_variables[column], row_variables[row]],
-#                        lambda values,
-#                               column_variable=column_variables[column],
-#                               row_variable=row_variables[row],
-#                               column_index=(1 << row),
-#                               row_index=(1 << (width - column - 1)):
-#                            ((values[row_variable] & row_index) != 0) == \
-#                            ((values[column_variable] & column_index) != 0))
-##                            veritas(values, row_variable, column_variable, row_index, column_index))
-#
-#
-#                    column_variables[column].constraints.add(constraint)
-#                    row_variables[row].constraints.add(constraint)
-#                    constraints[(row, column)] = constraint
-#    
-#    #print("TRY TO STOP ME!")
-#    #for constraint in constraints:
-#    #    print(' + '.join(variable.identity for variable in constraint.variables))
-#
-#    return constraints.values()
 
 def build_domain(dimension, spec):
     def build_pattern(m):
@@ -145,13 +59,13 @@ def build_problem(text):
 
     print("\nrow_values = {0}, column_values = {1}".format(row_values, column_values))
 
-#    for row in range(len(row_domains)):
-#        for column, column_domain in enumerate(column_domains):
-#            row_domains[row] = reduce_row_domain(row_domains[row], column_domain, row, column, dimensions[0], dimensions[1])
-#
-#    for column in range(len(column_domains)):
-#        for row, row_domain in enumerate(row_domains):
-#            column_domains[column] = reduce_column_domain(row_domain, column_domains[column], row, column, dimensions[0], dimensions[1])
+    for row in range(len(row_domains)):
+        for column, column_domain in enumerate(column_domains):
+            row_domains[row] = reduce_row_domain(row_domains[row], column_domain, row, column, dimensions[0], dimensions[1])
+
+    for column in range(len(column_domains)):
+        for row, row_domain in enumerate(row_domains):
+            column_domains[column] = reduce_column_domain(row_domain, column_domains[column], row, column, dimensions[0], dimensions[1])
 
     row_values = sum(len(row_domain) for row_domain in row_domains)
     column_values = sum(len(column_domain) for column_domain in column_domains)
@@ -174,6 +88,8 @@ def build_problem(text):
         for column, column_domain in enumerate(column_domains) })
 
     constraints = build_constraints(row_variables, column_variables, row_domains, column_domains, dimensions[0], dimensions[1])
+
+    print('number of variables = {0} number of constraints = {1}'.format(len(variables), len(constraints)))
 
     network = vi.csp.Network(variables, domains, constraints)
     problem = vi.search.gac.Problem(network)

@@ -103,11 +103,12 @@ class BestFirst(object):
                 self.__push_closed(self.node)
 
                 if self.problem.goal_test(self.node.state):
-                    self.__set_state(State.success, self.node, Solution(self.node))
+                    solution = self.__create_solution(self.node)
+                    self.__set_state(State.success, self.node, solution)
                 else:
                     self.__set_state(State.expand_node_begin, self.node)
             else:
-                self.__set_state(State.failed)
+                self.__set_state(State.failed, self.node)
         else:
             if self.state is State.expand_node_begin:
                 self.successors = self.problem.successors(self.node)
@@ -118,6 +119,11 @@ class BestFirst(object):
                 self.__handle_successor(successor)
             else:
                 self.__set_state(State.expand_node_complete, self.node)
+
+    def __create_solution(self, node):
+        return self.problem.solution(node) \
+               if hasattr(self.problem, 'solution') \
+               else Solution(node)
 
     def __handle_successor(self, successor):
         open_entry = self.open_hash_table.get(successor.state)

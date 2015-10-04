@@ -7,9 +7,9 @@ import vi.search.graph
 import vi.search.gac
 
 with open(sys.argv[1], 'r') as f:
-    problem = vi.app.nonogram.build_problem(f.read())
+    problem, dimensions = vi.app.nonogram.build_problem(f.read())
 
-search = vi.search.graph.AStar(problem)
+search = vi.search.graph.BestFirst(problem, vi.search.graph.BestFirst.Strategy.astar)
 
 while not search.is_complete():
     search.step()

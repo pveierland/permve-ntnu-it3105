@@ -8,7 +8,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-import vi.app.astar_navigation
 import vi.grid
 import vi.search.graph
 import vi.search.grid
@@ -60,7 +59,7 @@ class NonogramWidget(QWidget):
     def load(self, filename):
         with open(filename, 'r') as f:
             self.problem, self.dimensions = vi.app.nonogram.build_problem(f.read())
-            self.search  = vi.search.graph.AStar(self.problem)
+            self.search  = vi.search.graph.BestFirst(self.problem, vi.search.graph.BestFirst.Strategy.astar)
 
             if self.search_state_listener:
                 self.search_state_listener(self.search)
