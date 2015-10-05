@@ -29,20 +29,14 @@ class NonogramWidget(QWidget):
 
         self.cell_size   = 22
         self.margin_size = 2
+        self.frequency   = 1
 
         self.play_thread = None
         self.is_playing  = False
 
         self.dimensions = None
-        self.problem = None
-        self.search  = None
-
-        self.frequency = 1
-
-        self.cell_colors = {
-            -1: QColor(51, 51, 51),
-             1: QColor(255, 255, 255)
-        }
+        self.problem    = None
+        self.search     = None
 
         self.colors = {
             'start':                 QColor(0, 221, 0),
@@ -50,16 +44,17 @@ class NonogramWidget(QWidget):
             'line':                  QColor(51, 51, 51),
             'expand_node_outline':   QColor(2, 120, 120),
             'generate_node_outline': QColor(243, 115, 56),
-            'closed_node':           QColor(175, 238, 238),
-            'open_node':             QColor(152, 251, 152),
             'solution_outline':      QColor(255, 255, 0),
-            'bad_times':             QColor(248, 14, 39),   # red
+            'bad_times':             QColor(248, 14, 39),
+            'filled':                QColor(51, 51, 51),
+            'unfilled':              QColor(255, 255, 255)
         }
 
     def load(self, filename):
         with open(filename, 'r') as f:
             self.problem, self.dimensions = vi.app.nonogram.build_problem(f.read())
-            self.search  = vi.search.graph.BestFirst(self.problem, vi.search.graph.BestFirst.Strategy.astar)
+            self.search  = vi.search.graph.BestFirst(
+                self.problem, vi.search.graph.BestFirst.Strategy.astar)
 
             if self.search_state_listener:
                 self.search_state_listener(self.search)
@@ -87,9 +82,9 @@ class NonogramWidget(QWidget):
 
     def paintEvent(self, event):
         def draw_square(coordinate, color):
-            painter.fillRect(size * coordinate.x,
-                             size * (self.dimensions[1] - coordinate.y - 1),
-                             size, size,
+            painter.fillRect(self.cell_size * coordinate.x,
+                             self.cell_size * (self.dimensions[1] - coordinate.y - 1),
+                             self.cell_size, self.cell_size,
                              color)
 
         def draw_outline(variable_identity, color):
@@ -98,40 +93,28 @@ class NonogramWidget(QWidget):
 
             if variable_identity[0] is vi.app.nonogram.Dimension.column:
                 # Drawing column outline
-                painter.drawRect(size * variable_identity[1], 0,
-                                 size, size * self.dimensions[1])
+                painter.drawRect(self.cell_size * variable_identity[1], 0,
+                                 self.cell_size, self.cell_size * self.dimensions[1])
             else:
                 # Drawing row outline
-                painter.drawRect(0, size * (self.dimensions[1] - variable_identity[1] - 1),
-                                 size * self.dimensions[0], size)
+                painter.drawRect(0, self.cell_size * (self.dimensions[1] - variable_identity[1] - 1),
+                                 self.cell_size * self.dimensions[0], self.cell_size)
 
             painter.restore()
 
-
-
-
-
-        #def draw_text(coordinate, text):
-        #    painter.drawText(QRectF(size * coordinate.x,
-        #                     size * (self.problem.grid.height - coordinate.y - 1),
-        #                     size, size),
-        #                     Qt.AlignCenter,
-        #                     text)
-
-        if not self.problem:
+        if not self.search:
             return
 
         with self.drawing_lock:
-            size = self.cell_size
+            size = self.size()
 
             painter = QPainter(self)
+            painter.setPen(QPen(QBrush(self.colors['line']), 0))
+            painter.drawRect(0, 0, size.width() - 1, size.height() - 1)
+
             painter.translate(self.margin_size, self.margin_size)
-
-            painter.setPen(QPen(QBrush(self.colors['line']), size / 25))
+            painter.setPen(QPen(QBrush(self.colors['line']), self.cell_size / 25))
             painter.setFont(QFont('Arial', 8))
-
-#            domains = sorted((variable.identity, domain)
-#                             for variable, domain in .items())
 
             domains = self.search.node.state.domains
 
@@ -144,7 +127,7 @@ class NonogramWidget(QWidget):
                                  not any(value & (1 << self.dimensions[0] - column - 1) != 0 \
                                      for value in row_domain)
                     row_value = (row_domain[0] & (1 << self.dimensions[0] - column - 1)) != 0
-                    
+
                     column_domain = domains[(vi.app.nonogram.Dimension.column, column)]
 
                     column_agree = all(value & (1 << row) != 0
@@ -159,65 +142,21 @@ class NonogramWidget(QWidget):
 
                     if agree:
                         if value:
-                            draw_square(vi.grid.Coordinate(column, row), self.colors['open_node'])
+                            draw_square(vi.grid.Coordinate(column, row), self.colors['filled'])
                         else:
-                            draw_square(vi.grid.Coordinate(column, row), self.colors['closed_node'])
+                            draw_square(vi.grid.Coordinate(column, row), self.colors['unfilled'])
                     else:
                         draw_square(vi.grid.Coordinate(column, row), self.colors['bad_times'])
 
-            if self.search:
-                if self.search.state == vi.search.graph.State.expand_node_begin or \
-                   self.search.state == vi.search.graph.State.generate_nodes or \
-                   self.search.state == vi.search.graph.State.expand_node_complete:
-                    action = self.search.info[0].action
-                    if action:
-                        draw_outline(action[0].identity, self.colors['expand_node_outline'])
-                if self.search.state == vi.search.graph.State.generate_nodes:
-                    action = self.search.info[1].action
-                    draw_outline(action[0].identity, self.colors['generate_node_outline'])
-
-
-        #    for y in range(self.problem.grid.height):
-        #        for x in range(self.problem.grid.width):
-        #            cell_value = self.problem.grid.values[y][x]
-        #            draw_square(vi.grid.Coordinate(x, y), self.cell_colors[cell_value])
-
-        #    draw_square(self.problem.start, self.colors['start'])
-        #    draw_text(self.problem.start,   'START')
-        #    draw_square(self.problem.goal,  self.colors['goal'])
-        #    draw_text(self.problem.goal,    'GOAL')
-
-        #    if self.search and self.search.state != vi.search.graph.State.start:
-        #        for closed_node in self.search.closed_list():
-        #            draw_square(closed_node.state, self.colors['closed_node'])
-
-        #        for open_node in self.search.open_list():
-        #            draw_square(open_node.state, self.colors['open_node'])
-
-        #    if self.search and self.search.state == vi.search.graph.State.success:
-        #        for action, state in self.search.info[1].path:
-        #            draw_square(state, self.colors['solution_outline'])
-
-        #    if self.search and self.search.state != vi.search.graph.State.start:
-        #        for closed_node in self.search.closed_list():
-        #            draw_text(closed_node.state, 'g={0}\nh={1:.1f}'.format(closed_node.path_cost, closed_node.heuristic_value))
-
-        #        for open_node in self.search.open_list():
-        #            draw_text(open_node.state, 'g={0}\nh={1:.1f}'.format(open_node.path_cost, open_node.heuristic_value))
-
-        #    for y in range(self.problem.grid.height + 1):
-        #        painter.drawLine(0, size * (self.problem.grid.height - y), size * self.problem.grid.width, size * (self.problem.grid.height - y))
-
-        #    for x in range(self.problem.grid.width + 1):
-        #        painter.drawLine(size * x, 0, size * x, size * self.problem.grid.height)
-
-        #    if self.search:
-        #        if self.search.state == vi.search.graph.State.expand_node_begin or \
-        #           self.search.state == vi.search.graph.State.generate_nodes or \
-        #           self.search.state == vi.search.graph.State.expand_node_complete:
-        #            draw_outline(self.search.info[0].state, self.colors['expand_node_outline'])
-        #        if self.search.state == vi.search.graph.State.generate_nodes:
-        #            draw_outline(self.search.info[1].state, self.colors['generate_node_outline'])
+            if self.search.state == vi.search.graph.State.expand_node_begin or \
+               self.search.state == vi.search.graph.State.generate_nodes or \
+               self.search.state == vi.search.graph.State.expand_node_complete:
+                action = self.search.info[0].action
+                if action:
+                    draw_outline(action[0].identity, self.colors['expand_node_outline'])
+            if self.search.state == vi.search.graph.State.generate_nodes:
+                action = self.search.info[1].action
+                draw_outline(action[0].identity, self.colors['generate_node_outline'])
 
     def set_playing(self, state):
         self.is_playing = state
@@ -270,11 +209,13 @@ class NonogramApplication(QMainWindow):
 
         self.label_search_state = QLabel()
         self.label_search_nodes = QLabel()
+
+        self.label_search_state.setWordWrap(True)
+        self.label_search_nodes.setWordWrap(True)
+
         self.initialize_group_box_control()
-        self.initialize_group_box_algorithm()
 
         top_layout = QVBoxLayout()
-        top_layout.addWidget(self.group_box_algorithm)
         top_layout.addWidget(self.group_box_control)
         top_layout.addStretch(1)
 
@@ -307,36 +248,13 @@ class NonogramApplication(QMainWindow):
 
         return super(NonogramApplication, self).event(e)
 
-    def initialize_group_box_algorithm(self):
-        layout = QVBoxLayout()
-
-        self.radio_button_bfs      = QRadioButton("BFS")
-        self.radio_button_dfs      = QRadioButton("DFS")
-        self.radio_button_astar    = QRadioButton("A*")
-        self.radio_button_dijkstra = QRadioButton("Dijkstra")
-
-        self.button_group_algorithms = QButtonGroup()
-        self.button_group_algorithms.addButton(self.radio_button_bfs)
-        self.button_group_algorithms.addButton(self.radio_button_dfs)
-        self.button_group_algorithms.addButton(self.radio_button_astar)
-        self.button_group_algorithms.addButton(self.radio_button_dijkstra)
-
-        layout = QVBoxLayout()
-        layout.addWidget(self.radio_button_bfs)
-        layout.addWidget(self.radio_button_dfs)
-        layout.addWidget(self.radio_button_astar)
-        layout.addWidget(self.radio_button_dijkstra)
-
-        self.group_box_algorithm = QGroupBox("Algorithm")
-        self.group_box_algorithm.setLayout(layout)
-
     def initialize_group_box_control(self):
         self.combo_box_file_selector = QComboBox()
         self.combo_box_file_selector.activated[str].connect(self.nonogram_widget.load)
         self.combo_box_file_selector_load_values()
 
         self.slider_frequency = QSlider(Qt.Horizontal)
-        self.slider_frequency.setRange(5, 500)
+        self.slider_frequency.setRange(1, 100)
         self.slider_frequency.setTracking(True)
         self.slider_frequency.valueChanged.connect(self.handle_set_frequency)
 
@@ -376,9 +294,8 @@ class NonogramApplication(QMainWindow):
             if f.endswith('.txt'):
                 self.combo_box_file_selector.addItem(f)
 
-    def handle_set_frequency(self, value):
-        frequency = value / 10.0
-        self.label_frequency.setText("{0:.1f} Hz".format(frequency))
+    def handle_set_frequency(self, frequency):
+        self.label_frequency.setText("{0} Hz".format(frequency))
         self.nonogram_widget.set_frequency(frequency)
 
     def update_play_state(self, is_playing):
