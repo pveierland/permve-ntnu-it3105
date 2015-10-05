@@ -6,12 +6,10 @@ class Problem(object):
         self.start = start
 
     def goal_test(self, state):
-        return all(len(domain) == 1
-                   for variable, domain in state.domains.items())
+        return all(len(domain) == 1 for domain in state.domains.values())
 
     def heuristic(self, state):
-        return sum(len(domain) - 1
-                   for variable, domain in state.domains.items())
+        return sum(len(domain) - 1 for domain in state.domains.values())
 
     def initial_node(self):
         return Node(vi.csp.general_arc_consistency(self.start))
@@ -26,7 +24,7 @@ class Problem(object):
         variable = get_assumption_variable()
 
         for value in node.state.domains[variable]:
-            successor_state = node.state.copy_domains()
+            successor_state = node.state.copy()
             successor_state.domains[variable] = [value]
             successor_state = vi.csp.general_arc_consistency_rerun(
                 successor_state, variable)

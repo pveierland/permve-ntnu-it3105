@@ -11,42 +11,74 @@ class Dimension(Enum):
     column = 1
     row    = 2
 
-def build_constraints(row_variables, column_variables, row_domains, column_domains, width, height):
+def build_constraints(
+    row_variables, column_variables, row_domains, column_domains, width, height):
+
     constraints = []
 
-    for row, row_domain in enumerate(row_domains):
-        for column, column_domain in enumerate(column_domains):
-            constraint = vi.csp.Constraint(
-                [row_variables[row], column_variables[column]],
-                lambda values,
-                       row_variable=row_variables[row],
-                       column_variable=column_variables[column],
-                       row_index=(1 << (width - column - 1)),
-                       column_index=(1 << row):
-                    ((values[row_variable] & row_index) != 0) == \
-                    ((values[column_variable] & column_index) != 0))
+    row_disagreements = []
+    for row_domain in row_domains:
+        row_disagreement = 0
+        for values in row_domain[1:]:
+            row_disagreement = row_disagreement | (row_domain[0] ^ values)
+        row_disagreements.append(row_disagreement)
 
-            row_variables[row].constraints.add(constraint)
-            column_variables[column].constraints.add(constraint)
-            constraints.append(constraint)
+    column_disagreements = []
+    for column_domain in column_domains:
+        column_disagreement = 0
+        for values in column_domain[1:]:
+            column_disagreement = column_disagreement | (column_domain[0] ^ values)
+        column_disagreements.append(column_disagreement)
+
+    for row in range(height):
+        for column in range(width):
+            if (row_disagreements[row] & (1 << width - column - 1) != 0) or \
+               (column_disagreements[column] & (1 << row) != 0):
+
+                constraint = vi.csp.Constraint(
+                    [row_variables[row], column_variables[column]],
+                    lambda values,
+                           row_variable=row_variables[row],
+                           column_variable=column_variables[column],
+                           row_index=(1 << (width - column - 1)),
+                           column_index=(1 << row):
+                        ((values[row_variable] & row_index) != 0) == \
+                        ((values[column_variable] & column_index) != 0))
+
+                row_variables[row].constraints.add(constraint)
+                column_variables[column].constraints.add(constraint)
+                constraints.append(constraint)
 
     return constraints
 
 def build_domain(dimension, spec):
-    def build_pattern(m):
+    def build_pattern(configuration):
         pattern = 0
 
-        for one, zero in zip(spec, m):
+        for one, zero in zip(spec, configuration):
             pattern = pattern << (one + zero + 1)
             pattern = pattern | ((1 << one) - 1)
 
-        pattern = pattern << m[-1]
+        pattern = pattern << configuration[-1]
         return pattern
 
-    return [build_pattern(m) for m in multichoose(len(spec) + 1, dimension - sum(spec) - len(spec) + 1)]
+    # http://mathoverflow.net/a/9494
+    def multichoose(n, k):
+        if k < 0 or n < 0: return "Error"
+        if not k: return [[0]*n]
+        if not n: return []
+        if n == 1: return [[k]]
+        return [[0]+val for val in multichoose(n-1,k)] + \
+               [[val[0]+1]+val[1:] for val in multichoose(n,k-1)]
+
+    return [build_pattern(m)
+            for m in multichoose(len(spec) + 1,
+                                 dimension - sum(spec) - len(spec) + 1)]
 
 def build_problem(text):
     dimensions, row_specs, column_specs = parse_file(text)
+
+    print("\ndimensions = {0}".format(dimensions))
 
     row_domains = [ list(build_domain(dimensions[0], row_spec))
                     for row_spec in row_specs ]
@@ -95,15 +127,6 @@ def build_problem(text):
     problem = vi.search.gac.Problem(network)
 
     return problem, dimensions
-
-# http://mathoverflow.net/a/9494
-def multichoose(n,k):
-    if k < 0 or n < 0: return "Error"
-    if not k: return [[0]*n]
-    if not n: return []
-    if n == 1: return [[k]]
-    return [[0]+val for val in multichoose(n-1,k)] + \
-           [[val[0]+1]+val[1:] for val in multichoose(n,k-1)]
 
 def parse_file(text):
     lines = text.splitlines()

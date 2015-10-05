@@ -1,5 +1,4 @@
 import os
-import re
 import sys
 import time
 import threading
@@ -27,7 +26,7 @@ class NonogramWidget(QWidget):
 
         self.drawing_lock = threading.Lock()
 
-        self.cell_size   = 22
+        self.cell_size   = 20
         self.margin_size = 2
         self.frequency   = 1
 
@@ -126,6 +125,7 @@ class NonogramWidget(QWidget):
                                      for value in row_domain) or \
                                  not any(value & (1 << self.dimensions[0] - column - 1) != 0 \
                                      for value in row_domain)
+
                     row_value = (row_domain[0] & (1 << self.dimensions[0] - column - 1)) != 0
 
                     column_domain = domains[(vi.app.nonogram.Dimension.column, column)]

@@ -4,7 +4,7 @@ class Network(object):
         self.domains     = domains
         self.constraints = constraints
 
-    def copy_domains(self):
+    def copy(self):
         return Network(self.variables,
                        self.domains.copy(),
                        self.constraints)
