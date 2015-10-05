@@ -12,9 +12,70 @@
 
 \date{\normalsize\today}
 
+\newacro{CSP}{Constraint Satisfaction Problem}
+\newacro{GAC}{General Arc Constraint}
+
 \begin{document}
 
 \maketitle
+
+\section*{Variables}
+The formulation chosen to solve the problem is the one suggested in the assignment where one variable is used to represent each row; and one variable to represent each column. Each value in a variable's domain is represented as an integer, where each bit represents whether the cell is filled or unfilled. This allows a compact representation where many operations can be completed efficiently, but limits the width and height of the nonogram to $64 \times 64$ cells.
+
+\section*{Domains}
+To allow the domain reduction between rows and columns as suggested in the assignment the input row and column specifications must first be converted into valid entries in their respective domains.
+
+When creating the initial domains for each row and column variable it is important to efficiently generate the domain values. One way this can be done is to view the area before the first segment in a line as a bucket, the area between each segment as a bucket, and the area after the last segment as a bucket. When all of the segments are placed as close to the start as possible, with one space between each segment; the remaining spaces after the last segment can be considered ``free'' since they can be arbitrarily split between the buckets. When a bucket between two segment has 0 entries; there is a single space between the two segments -- and when a bucket between two segments has one entry there are two spaces between the two segments. Using this formulation the problem is to multichoose the position of $k$ balls in $n$ buckets, which can be done using an easy to formulate ``Stars and bars'' approach.
+
+After generating the initial domains a reduction is performed to remove impossible domain values. If for a column variable all values in its domain agree for a single cell; i.e. they are either all 0 or 1 -- then all values in the domain for the row sharing this cell which disagree with the column cell value are removed. This reduction is performed both from cell domains to row domains and for all cells. The result of the domain reduction can be seen in Table~\ref{table:nonoresults}.
+
+\begin{table}
+\centering
+\begin{tabular}{rlccccc}
+\toprule
+& Scenario & Size & Initial domains & Reduced domains & Constraints & Solution length \\
+\midrule
+0 & \texttt{heart-1}   & $10 \times 10$ &  116 &  94 &  44 & 1 \\
+1 & \texttt{cat}       & $ 8 \times  9$ &  158 &  72 &  41 & 0 \\
+2 & \texttt{chick}     & $15 \times 15$ & 1113 &  54 &  33 & 0 \\
+3 & \texttt{rabbit}    & $20 \times 15$ &  955 & 344 & 165 & 0 \\
+4 & \texttt{camel}     & $15 \times 15$ &  755 & 229 & 124 & 0 \\
+5 & \texttt{telephone} & $15 \times 15$ & 2456 & 138 &  59 & 0 \\
+6 & \texttt{sailboat}  & $20 \times 20$ & 3389 &  92 &  85 & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Nonogram scenario results}
+\label{table:nonoresults}
+\end{table}
+
+\section*{Constraints}
+
+The nonogram solver is implemented with one variable for each row and one variable for each column. Initially these variables are initialized with only valid configurations. This means that constraints are only needed to ensure consistent values between row and column variables.
+
+The naive approach is to use a separate constraint for every cell to connect intersecting row and column variables. This can lead to a large number of unnecessary constraints. A simple effort to improve upon this is to only add constraints to cells where the value is not the same in all domains. The effect of this can be seen in Table~\ref{table:nonoresults}. This strategy is still not optimal as there may still be redundant constraints.
+
+\section*{Heuristics}
+
+The heuristics used for the A*-GAC search are unchanged from module 2. The main $h$-value is calculated as a sum of the size of all domains in the network minus 1; such that for a goal state where all domains has a size of 1 the heuristic value will be 0.
+
+When generating successor states; the variable with the smallest domain greater than 1 is chosen.
+
+Given the composite representation where each variable represents a multitude of individual cells it could be beneficial to take this into account when building the heuristic. The software interface could be modified to allow the introduction of a \ac{GAC} problem specific heuristic. However due to very short search paths for all the given problems it was not necessary to implement this.
+
+\section*{Generality of implementation}
+
+The A*-GAC algorithm built for module 2 could be applied to solve nonograms with no changes to its implementation. The following set of methods were created to build a \ac{CSP} formulation of a specific nonogram problem through instantiating and connecting \texttt{vi.csp.Variable} and \texttt{vi.csp.Constraint} objects and collecting them in a \texttt{vi.csp.Network} object:
+
+\begin{itemize}
+\item \texttt{build\_problem} -- Builds a \texttt{vi.csp.Network} representation of the input file contents describing a nonogram.
+\item \texttt{build\_domain(dimension, specification)} -- Builds the domain with all legal variations of the given specification for the given dimension size.
+\item \texttt{multichoose(n, k)} -- Generates all possible ways to place $k$ balls into $n$ buckets. Used by \texttt{build\_domain} to generate all valid domain configurations.
+\item \texttt{build\_pattern(spec, configuration)} -- Generates a domain value pattern based on a specification and a configuration. Used by \texttt{build\_domain} to generate domain value patterns.
+\item \texttt{build\_constraints(row\_variables, column\_variables, row\_domains, column\_domains, width, height)} -- Builds the constraints needed to ensure consistent values between all row and column variables. Used by \texttt{build\_problem}.
+\item \texttt{reduce\_row\_domain(row\_domain, column\_domain, row, column, width, height)} -- Returns a set of column domains based on eliminating impossible configurations. A corresponding method exists for columns. Used by \texttt{build\_problem} to reduce the domain size.
+\end{itemize}
+
+The resulting \texttt{vi.csp.Network} object is used to construct a \texttt{vi.search.gac.Problem} object which is the basis for the A*-GAC search. Further details are described in the documentation for module 2.
 
 \end{document}
 

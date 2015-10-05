@@ -20,6 +20,21 @@
 
 \section*{Search agenda}
 
+The search agenda, also known as the ``open list'' is used to maintain generated search nodes which have not yet been expanded. When popping a search node from the ``open list'' it is checked whether the state associated with the search node is a goal state. If it is a goal state the search completes; otherwise the search node is expanded and successor states are generated -- adding unique successor states to the ``open list''. Search nodes which have been expanded are added to a ``closed list'' to keep track of previously examined states.
+
+The important operations relating to the ``open list'' are:
+\begin{enumerate*}
+\item testing if a state exists in the list
+\item adding new search nodes to the list
+\item removing the search node with the lowest $f$-value
+\end{enumerate*}.
+
+To implement these operations efficiently both a hash map and a heap queue are maintained to keep track of the ``open list''. It is required that objects representing state implement a hashing operation and an operation to test for equality. The hash map is used to allow testing if a state exists in the ``open list'' in O$(1)$ time; while the heap queue is used to efficiently keep track of the search node with the lowest $f$-value. The heap queue allows insertion of a search node and extraction of the search node with lowest $f$-value in O$(\log(n))$ time.
+
+An important note is that when a better path is found to an existing search node; the path cost of the existing search node must be updated and propagated. Since this may change the $f$-value of search nodes on the ``open list'' the heap queue must be re-heapified; an operation which takes O$(n)$ time.
+
+The ``closed list'' does not need to keep track of $f$-values and must only support testing for membership and adding new search nodes efficiently. It is maintained using a hash map.
+
 \section*{Generality of program}
 
 When starting work on the three first modules in the \textit{IT3105} course I decided to do all software in the Python language as it allows for easy prototyping and development as well as the ability to write readable software. The codebase is split into a file hierarchy with some of the classes central to the module~1 problem shown in Figure~\ref{figure:vi_classes}.
@@ -48,7 +63,7 @@ Any problem can be used with the \texttt{BestFirst} search class if it provides 
 
 The central component of the A* search is the heuristic function which estimates the path cost from a given search space state to the goal state. To guarantee that an A* search finds an optimal solution, the heuristic function must be admissible, meaning that it must never overestimate the path cost to the goal state.
 
-Two popular heuristics for the grid search problem is the Manhattan distance and the Euclidean distance. The Manhattan distance is given by $\textit{abs}(g_x - s_x) + \textit{abs}(g_y - s_y)$ where $g$ is the goal state and $s$ is the given state. Given our grid problem where only vertical and horizontal movement is allowed, the Manhattan distance not only an admissible heuristic, but also a perfect heuristic since its value will always be the shortest path between a cell in the grid and the goal cell. However since our problem also includes obstacles, the heuristic estimate will not always match the actual path cost as it assumes that all grid cells are traversable.
+Two popular heuristics for the grid search problem is the Manhattan distance and the Euclidean distance. The Manhattan distance is given by $\textit{abs}(g_x - s_x) + \textit{abs}(g_y - s_y)$ where $g$ is the goal state and $s$ is the given state. Given our grid problem where only vertical and horizontal movement is allowed, the Manhattan distance is not only an admissible heuristic, but also a perfect heuristic since its value will always be the shortest path between a cell in the grid and the goal cell. However since our problem also includes obstacles, the heuristic estimate will not always match the actual path cost as it assumes that all grid cells are traversable.
 
 The Euclidean heuristic uses the straight-line distance between two grid cells as the estimate to the goal. It is given by $\sqrt{(g_x - s_x)^2 + (g_y - s_y)^2}$. It is an admissible heuristic for the problem, but it will underestimate the cost to the goal whenever the starting cell is on a different row or column than the goal.
 
