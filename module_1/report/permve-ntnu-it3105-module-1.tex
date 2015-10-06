@@ -1,5 +1,7 @@
 \input{../../../permve-ntnu-latex/assignment.tex}
 
+\usepackage{float}
+
 \title{
 \normalfont \normalsize
 \textsc{Norwegian University of Science and Technology\\IT3105 -- Artificial Intelligence Programming}
@@ -12,11 +14,17 @@
 
 \date{\normalsize\today}
 
+\newacro{BFS}{Breadth First Search}
+\newacro{DFS}{Depth First Search}
+
 \begin{document}
 
+\fancyfoot[C]{}
 \maketitle
 
 \newpage
+\fancyfoot[C]{\thepage~of~\pageref{LastPage}} % Page numbering for right footer
+\setcounter{page}{1}
 
 \section*{Search agenda}
 
@@ -35,9 +43,11 @@ An important note is that when a better path is found to an existing search node
 
 The ``closed list'' does not need to keep track of $f$-values and must only support testing for membership and adding new search nodes efficiently. It is maintained using a hash map.
 
+Partly for the assignment and partly for fun; the strategy employed by the \texttt{BestFirst} search class can be changed mid-search between \ac{BFS}, \ac{DFS}, Dijkstra's algorithm and A*. When using \ac{BFS} and \ac{DFS} the ``open list'' is maintained as a double ended queue, also known as a deque, to allow adding and removing elements from both ends of the queue in O$(1)$ time. The search nodes on the ``open list'' will be correctly moved between the priority queue and the double ended queue used in the ``open list'' when switching strategies.
+
 \section*{Generality of program}
 
-When starting work on the three first modules in the \textit{IT3105} course I decided to do all software in the Python language as it allows for easy prototyping and development as well as the ability to write readable software. The codebase is split into a file hierarchy with some of the classes central to the module~1 problem shown in Figure~\ref{figure:vi_classes}.
+When starting work on the three first modules in the \textsc{IT3105} course I decided to do all software in the Python language as it allows for easy prototyping and development as well as the ability to write readable software. The codebase is split into a file hierarchy with some of the classes central to the module~1 problem shown in Figure~\ref{figure:vi_classes}.
 
 Any problem can be used with the \texttt{BestFirst} search class if it provides the following interface:
 
@@ -49,12 +59,10 @@ Any problem can be used with the \texttt{BestFirst} search class if it provides 
 \item \texttt{successors(node)} -- Generates all successors for a given node by applying all valid operators. This method is called directly by the \texttt{BestFirst} class.
 \end{itemize}
 
-%In addition to the \texttt{BestFirst} search class and a \texttt{Problem} class; a
+The domain-specific \texttt{Problem} class is responsible for instantiating all search nodes, successor objects and solution objects. If it is necessary for the problem; custom implementations can be used for all of these objects as long as they follow the same interface as the \texttt{vi.search.graph.Node}, \texttt{vi.search.graph.Successor} and \texttt{vi.search.graph.Solution} classes.
 
-%Path costs and heuristic values are never manipulated directly from the \texttt{BestFirst} search clas
-
-\begin{figure}[p]
-\includegraphics[width=\linewidth,scale=0.1]{images/vi_class_hierarchy}
+\begin{figure}[H]
+\includegraphics[scale=0.7]{images/vi_class_hierarchy}
 \caption{VI Python library classes}
 \label{figure:vi_classes}
 \end{figure}
