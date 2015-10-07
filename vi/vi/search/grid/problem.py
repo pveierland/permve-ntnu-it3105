@@ -38,4 +38,8 @@ class Problem(object):
                 successor_state = node.state.right()
 
             if not self.is_blocked(successor_state):
-                yield Successor(self, node, successor_state, action, 1)
+                # Step cost is only cost of destination cell;
+                # following the definition made in TDT4136 assignment 3:
+                step_cost = self.grid.values[successor_state.y][successor_state.x]
+
+                yield Successor(self, node, successor_state, action, step_cost)

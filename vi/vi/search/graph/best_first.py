@@ -94,6 +94,12 @@ class BestFirst(object):
 
         self.strategy = strategy
 
+    def search(self):
+        while not self.is_complete():
+            self.step()
+        if self.state == State.success:
+            return self.info[1]
+
     def step(self):
         if self.state is State.start or \
            self.state is State.expand_node_complete:
@@ -143,19 +149,22 @@ class BestFirst(object):
             is_successor_state_unique = False
 
             successor_node = open_entry or closed_entry
-            new_path_cost  = self.node.path_cost + successor.step_cost
 
-            if new_path_cost < successor_node.path_cost:
-                successor_node.attach(self.node, new_path_cost)
+            if self.strategy is self.Strategy.astar:
+                new_path_cost = self.node.path_cost + successor.step_cost
 
-                if closed_entry:
-                    successor_node.propagate()
+                if new_path_cost < successor_node.path_cost:
+                    successor_node.attach(self.node, new_path_cost)
 
-                self.__open_list_costs_changed()
+                    if closed_entry:
+                        successor_node.propagate()
 
-        self.node.add_child(successor_node,
-                            successor.action,
-                            successor.step_cost)
+                    self.__open_list_costs_changed()
+
+        if self.strategy is self.Strategy.astar:
+            self.node.add_child(successor_node,
+                                successor.action,
+                                successor.step_cost)
 
         self.__set_state(State.generate_nodes,
                          self.node,
