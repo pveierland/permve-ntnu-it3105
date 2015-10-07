@@ -10,6 +10,16 @@ from nose.tools import assert_equals
 #o o o x x o
 #o o o o o o
 
+def test_distance_to_coordinate():
+    rectangle = Rectangle(3, 2, 2, 4)
+
+    assert_equals(rectangle.distance_to_coordinate(Coordinate(3, 1)), (0,  1))
+    assert_equals(rectangle.distance_to_coordinate(Coordinate(3, 2)), (0,  0))
+    assert_equals(rectangle.distance_to_coordinate(Coordinate(3, 3)), (0, -1))
+    assert_equals(rectangle.distance_to_coordinate(Coordinate(3, 4)), (0, -1))
+    assert_equals(rectangle.distance_to_coordinate(Coordinate(3, 5)), (0,  0))
+    assert_equals(rectangle.distance_to_coordinate(Coordinate(3, 6)), (0,  1))
+
 def test_intersects_coordinate():
     rectangle = Rectangle(3, 2, 2, 4)
 

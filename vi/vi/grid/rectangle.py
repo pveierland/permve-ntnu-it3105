@@ -19,8 +19,8 @@ class Rectangle(object):
             .format(self.x, self.y, self.width, self.height)
 
     def distance_to_coordinate(self, coordinate):
-        end_x = self.coordinate.x + self.width - 1
-        end_y = self.coordinate.y + self.height - 1
+        end_x = self.x + self.width - 1
+        end_y = self.y + self.height - 1
 
         if coordinate.x < self.x:
             diff_x = self.x - coordinate.x

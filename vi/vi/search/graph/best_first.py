@@ -23,7 +23,7 @@ class BestFirst(object):
         self.node = self.problem.initial_node()
 
         if self.node:
-            if self.strategy is self.Strategy.astar:
+            if self.strategy is BestFirst.Strategy.astar:
                 self.node.apply_heuristic(self.problem)
 
             self.__push_open(self.node)
@@ -41,10 +41,10 @@ class BestFirst(object):
         return self.open_hash_table.values()
 
     def set_strategy(self, strategy):
-        if (self.strategy is self.Strategy.dijkstra or \
-            self.strategy is self.Strategy.astar) and \
-           (strategy is self.Strategy.breadth_first or \
-            strategy is self.Strategy.depth_first):
+        if (self.strategy is BestFirst.Strategy.dijkstra or \
+            self.strategy is BestFirst.Strategy.astar) and \
+           (strategy is BestFirst.Strategy.breadth_first or \
+            strategy is BestFirst.Strategy.depth_first):
 
             while self.open_heap_queue:
                 node = heapq.heappop(self.open_heap_queue)
@@ -54,25 +54,25 @@ class BestFirst(object):
             for node in self.closed_hash_table.values():
                 node.clear_heuristic()
 
-        elif (self.strategy is self.Strategy.breadth_first or \
-              self.strategy is self.Strategy.depth_first) and \
-             (strategy is self.Strategy.dijkstra or \
-              strategy is self.Strategy.astar):
+        elif (self.strategy is BestFirst.Strategy.breadth_first or \
+              self.strategy is BestFirst.Strategy.depth_first) and \
+             (strategy is BestFirst.Strategy.dijkstra or \
+              strategy is BestFirst.Strategy.astar):
 
             while self.open_deque:
                 node = self.open_deque.popleft()
 
-                if strategy is self.Strategy.astar:
+                if strategy is BestFirst.Strategy.astar:
                     node.apply_heuristic(self.problem)
 
                 heapq.heappush(self.open_heap_queue, node)
 
-            if strategy is self.Strategy.astar:
+            if strategy is BestFirst.Strategy.astar:
                 for node in self.closed_hash_table.values():
                     node.apply_heuristic(self.problem)
 
-        elif self.strategy is self.Strategy.dijkstra and \
-             strategy is self.Strategy.astar:
+        elif self.strategy is BestFirst.Strategy.dijkstra and \
+             strategy is BestFirst.Strategy.astar:
 
             for node in self.open_heap_queue:
                 node.apply_heuristic(self.problem)
@@ -81,8 +81,8 @@ class BestFirst(object):
                 node.apply_heuristic(self.problem)
 
             self.__open_list_costs_changed()
-        elif self.strategy is self.Strategy.astar and \
-             strategy is self.Strategy.dijkstra:
+        elif self.strategy is BestFirst.Strategy.astar and \
+             strategy is BestFirst.Strategy.dijkstra:
 
             for node in self.open_heap_queue:
                 node.clear_heuristic()
@@ -141,7 +141,7 @@ class BestFirst(object):
 
             successor_node = successor.build_node()
 
-            if self.strategy is self.Strategy.astar:
+            if self.strategy is BestFirst.Strategy.astar:
                 successor_node.apply_heuristic(self.problem)
 
             self.__push_open(successor_node)
@@ -150,7 +150,7 @@ class BestFirst(object):
 
             successor_node = open_entry or closed_entry
 
-            if self.strategy is self.Strategy.astar:
+            if self.strategy is BestFirst.Strategy.astar:
                 new_path_cost = self.node.path_cost + successor.step_cost
 
                 if new_path_cost < successor_node.path_cost:
@@ -161,7 +161,7 @@ class BestFirst(object):
 
                     self.__open_list_costs_changed()
 
-        if self.strategy is self.Strategy.astar:
+        if self.strategy is BestFirst.Strategy.astar:
             self.node.add_child(successor_node,
                                 successor.action,
                                 successor.step_cost)
@@ -172,24 +172,24 @@ class BestFirst(object):
                          is_successor_state_unique)
 
     def __is_open_queue_empty(self):
-        if self.strategy is self.Strategy.dijkstra or \
-           self.strategy is self.Strategy.astar:
+        if self.strategy is BestFirst.Strategy.dijkstra or \
+           self.strategy is BestFirst.Strategy.astar:
             return len(self.open_heap_queue) == 0
-        elif self.strategy is self.Strategy.breadth_first or \
-             self.strategy is self.Strategy.depth_first:
+        elif self.strategy is BestFirst.Strategy.breadth_first or \
+             self.strategy is BestFirst.Strategy.depth_first:
             return len(self.open_deque) == 0
 
     def __open_list_costs_changed(self):
-        if self.strategy is self.Strategy.dijkstra or \
-           self.strategy is self.Strategy.astar:
+        if self.strategy is BestFirst.Strategy.dijkstra or \
+           self.strategy is BestFirst.Strategy.astar:
             heapq.heapify(self.open_heap_queue)
 
     def __pop_open(self):
-        if self.strategy is self.Strategy.dijkstra or \
-           self.strategy is self.Strategy.astar:
+        if self.strategy is BestFirst.Strategy.dijkstra or \
+           self.strategy is BestFirst.Strategy.astar:
             node = heapq.heappop(self.open_heap_queue)
-        elif self.strategy is self.Strategy.breadth_first or \
-             self.strategy is self.Strategy.depth_first:
+        elif self.strategy is BestFirst.Strategy.breadth_first or \
+             self.strategy is BestFirst.Strategy.depth_first:
             node = self.open_deque.popleft()
 
         del self.open_hash_table[node.state]
@@ -200,12 +200,12 @@ class BestFirst(object):
         self.closed_hash_table[node.state] = node
 
     def __push_open(self, node):
-        if self.strategy is self.Strategy.dijkstra or \
-           self.strategy is self.Strategy.astar:
+        if self.strategy is BestFirst.Strategy.dijkstra or \
+           self.strategy is BestFirst.Strategy.astar:
             heapq.heappush(self.open_heap_queue, node)
-        elif self.strategy is self.Strategy.depth_first:
+        elif self.strategy is BestFirst.Strategy.depth_first:
             self.open_deque.appendleft(node)
-        elif self.strategy is self.Strategy.breadth_first:
+        elif self.strategy is BestFirst.Strategy.breadth_first:
             self.open_deque.append(node)
 
         self.open_hash_table[node.state] = node
