@@ -26,20 +26,28 @@ class State(object):
     
     def __str__(self):
         return '\n'.join(
-            ''.join('{0:5d}'.format(self.get_value(row, column)) for column in range(4))
+            ''.join('{0:5d}'.format(self.get_number(row, column)) for column in range(4))
             for row in range (4))
         
     def available(self):
         return [ (row, column)
                  for row in range(4)
                  for column in range(4)
-                 if not self.get_value(row, column) ]
+                 if not self.get_number(row, column) ]
 
     def copy(self):
         return State(self.__state)
 
+    def get_highest_value(self):
+        return max(self.get_number(row, column)
+                   for row in range(4)
+                   for column in range(4))
+
+    def get_number(self, row, column):
+        return State.convert_compact_value_to_number(self.get_value(row, column))
+    
     def get_value(self, row, column):
-        return State.convert_compact_value_to_number(15 & (self.__state >> (16 * row + 4 * column)))
+        return 15 & (self.__state >> (16 * row + 4 * column))
 
     def move(self, action):
         def do_move(starting_state, start_offset, separator):
@@ -93,4 +101,4 @@ class State(object):
         return self
 
     def to_matrix(self):
-        return [ [ self.get_value(row, column) for column in range(4) ] for row in range (4) ]
+        return [ [ self.get_number(row, column) for column in range(4) ] for row in range (4) ]
