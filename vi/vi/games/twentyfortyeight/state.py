@@ -7,20 +7,38 @@ class State(object):
     def convert_compact_value_to_number(value):
         return 2 ** value if value else 0
 
+    @staticmethod
+    def convert_number_to_compact_value(number):
+        return int(math.log(number, 2)) if number else 0
+
+    @classmethod
+    def from_matrix(cls, matrix):
+        state = cls()
+        for row, row_value in enumerate(matrix):
+            for column, column_value in enumerate(row_value):
+                state.set_value(row, column, column_value)
+        return state
+
     __slots__ = ['__state']
 
     def __init__(self, initializer=0):
-        if isinstance(initializer, list):
-            state = 0
-            for row, row_value in enumerate(initializer):
-                for column, column_value in enumerate(row_value):
-                    if column_value:
-                        state = state | (int(math.log(column_value, 2)) << (16 * row + 4 * column))
-            self.__state = state
-        else:
-            self.__state = initializer
+        self.__state = initializer
+    
+    def __str__(self):
+        return '\n'.join(
+            ''.join('{0:5d}'.format(self.get_value(row, column)) for column in range(4))
+            for row in range (4))
+        
+    def available(self):
+        return [ (row, column)
+                 for row in range(4)
+                 for column in range(4)
+                 if not self.get_value(row, column) ]
 
-    def get(self, row, column):
+    def copy(self):
+        return State(self.__state)
+
+    def get_value(self, row, column):
         return State.convert_compact_value_to_number(15 & (self.__state >> (16 * row + 4 * column)))
 
     def move(self, action):
@@ -29,7 +47,7 @@ class State(object):
             output_offset = start_offset
 
             index = 0
-            while index < 4:
+            while index < 3:
                 offset       = separator * index + start_offset
                 current_cell = (starting_state & (15 << offset)) >> offset
 
@@ -45,6 +63,10 @@ class State(object):
                     output_offset = output_offset + separator
 
                 index = index + 1
+
+            if index < 4:
+                offset       = separator * index + start_offset
+                result_state = result_state | (((starting_state & (15 << offset)) >> offset) << output_offset)
 
             return result_state
 
@@ -65,11 +87,10 @@ class State(object):
                 result_state = result_state | do_move(starting_state, 16 * row + 12, -4)
 
         return State(result_state)
+    
+    def set_value(self, row, column, value):
+        self.__state = self.__state | (State.convert_number_to_compact_value(value) << (16 * row + 4 * column))
+        return self
 
-    def __str__(self):
-        return '\n'.join(
-            ''.join('{0:5d}'.format(self.get(row, column)) for column in range(4))
-            for row in range (4))
-
-    def to_list(self):
-        return [ [ self.get(row, column) for column in range(4) ] for row in range (4) ]
+    def to_matrix(self):
+        return [ [ self.get_value(row, column) for column in range(4) ] for row in range (4) ]
