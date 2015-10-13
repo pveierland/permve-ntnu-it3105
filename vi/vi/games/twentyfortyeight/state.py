@@ -24,51 +24,45 @@ class State(object):
         return State.convert_compact_value_to_number(15 & (self.__state >> (16 * row + 4 * column)))
 
     def move(self, action):
-        def do_move(column, row):
-            index = 0
-            output_offset = 16 * row + 4 * column
+        def do_move(starting_state, start_offset, separator):
+            result_state  = 0
+            output_offset = start_offset
 
-            while row < 4:
-                offset       = 16 * row + 4 * column
+            index = 0
+            while index < 4:
+                offset       = separator * index + start_offset
                 current_cell = (starting_state & (15 << offset)) >> offset
 
                 if current_cell:
-                    next_cell = (starting_state & (15 << offset + 16)) >> (offset + 16)
+                    next_cell = (starting_state & (15 << (offset + separator))) >> (offset + separator)
 
                     if current_cell == next_cell:
                         result_state = result_state | ((current_cell + 1) << output_offset)
-                        row = row + 1
+                        index = index + 1
                     else:
                         result_state = result_state | (current_cell << output_offset)
 
-                    output_offset = output_offset + 16
+                    output_offset = output_offset + separator
 
-                row = row + 1
+                index = index + 1
+
+            return result_state
 
         starting_state = self.__state
         result_state   = 0
 
         if action is Action.move_up:
             for column in range(4):
-                row = 0
-                output_offset = 4 * column
-
-                while row < 4:
-                    offset       = 16 * row + 4 * column
-                    current_cell = (starting_state & (15 << offset)) >> offset
-
-                    if current_cell:
-                        next_cell = (starting_state & (15 << offset + 16)) >> (offset + 16)
-
-                        if current_cell == next_cell:
-                            result_state = result_state | ((current_cell + 1) << output_offset)
-                            row = row + 1
-                        else:
-                            result_state = result_state | (current_cell << output_offset)
-
-                        output_offset = output_offset + 16
-
-                    row = row + 1
+                result_state = result_state | do_move(starting_state, 4 * column, 16)
+        elif action is Action.move_down:
+            for column in range(4):
+                result_state = result_state | do_move(starting_state, 48 + 4 * column, -16)
+        elif action is Action.move_left:
+            for row in range(4):
+                result_state = result_state | do_move(starting_state, 16 * row, 4)
+        elif action is Action.move_right:
+            for row in range(4):
+                result_state = result_state | do_move(starting_state, 16 * row + 12, -4)
 
         return State(result_state)
 
