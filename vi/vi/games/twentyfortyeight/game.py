@@ -16,14 +16,14 @@ def game():
 
     state = State()
 
-    populate(state)
-    populate(state)
-    populate(state)
-    populate(state)
-    populate(state)
-    populate(state)
-    populate(state)
-    populate(state)
+    #populate(state)
+    #populate(state)
+    #populate(state)
+    #populate(state)
+    #populate(state)
+    #populate(state)
+    #populate(state)
+    #populate(state)
 
     while True:
         if not populate(state):
@@ -31,7 +31,7 @@ def game():
                   state.get_highest_value()))
             sys.exit(-1)
 
-        score, move = expectiminimax(NodeType.player, state, 6)
+        score, move = expectiminimax(NodeType.player, state, 4)
         state = state.move(move)
 
         print('{0} {1}\n{2}\n'.format(score, heuristic(state), state))
