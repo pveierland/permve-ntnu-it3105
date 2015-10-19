@@ -14,7 +14,7 @@ from vi.app.egg_carton import Problem
 from vi.search import simulated_annealing
 import vi.qt.grid
 
-def render_output(args, solution):
+def render_output(output_filename, N, M, K, solution):
     app = QApplication([ '-platform', 'offscreen'])
 
     cell_size     = 50
@@ -29,33 +29,33 @@ def render_output(args, solution):
 
     printer = QPrinter()
     printer.setOutputFormat(QPrinter.PdfFormat)
-    printer.setOutputFileName(args.pdf)
+    printer.setOutputFileName(output_filename)
     printer.setPageMargins(0, 0, 0, 0, QPrinter.Inch)
     printer.setPageSize(QPageSize(
-        QSizeF(float(args.N * cell_size + 2 * margin_size) / printer.resolution(),
-               float(args.M * cell_size + 2 * margin_size) / printer.resolution()),
+        QSizeF(float(N * cell_size + 2 * margin_size) / printer.resolution(),
+               float(M * cell_size + 2 * margin_size) / printer.resolution()),
         QPageSize.Inch))
 
     painter = QPainter(printer)
     painter.translate(margin_size, margin_size)
     painter.setPen(QPen(colors['line'], 0))
 
-    for y in range(args.M + 1):
+    for y in range(M + 1):
         painter.drawLine(0,
                          cell_size * y,
-                         cell_size * args.N,
+                         cell_size * N,
                          cell_size * y)
 
-    for x in range(args.N + 1):
+    for x in range(N + 1):
         painter.drawLine(cell_size * x,
                          0,
                          cell_size * x,
-                         cell_size * args.M)
+                         cell_size * M)
 
     painter.setBrush(QBrush(colors['egg']))
 
-    for row in range(args.M):
-        for column in range(args.N):
+    for row in range(M):
+        for column in range(N):
             if solution[row, column]:
                 painter.drawEllipse(
                     QPointF(cell_size * (column + 0.5),
@@ -65,18 +65,25 @@ def render_output(args, solution):
 
     painter.end()
 
-parser = argparse.ArgumentParser()
-parser.add_argument('M', type=int)
-parser.add_argument('N', type=int)
-parser.add_argument('K', type=int)
-parser.add_argument('--max_epochs', type=int)
-parser.add_argument('--pdf', metavar='output_filename')
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('M', type=int)
+    parser.add_argument('N', type=int)
+    parser.add_argument('K', type=int)
+    parser.add_argument('--max_epochs', type=int)
+    parser.add_argument('--start_temperature', type=float)
+    parser.add_argument('--delta_temperature', type=float)
+    parser.add_argument('--pdf', metavar='output_filename')
+    args = parser.parse_args()
 
-problem = Problem(args.M, args.N, args.K)
-solution, epochs = simulated_annealing(problem, None, args.max_epochs)
+    problem = Problem(args.M, args.N, args.K)
+    solution, epochs = simulated_annealing(
+        problem, args.start_temperature, args.delta_temperature, args.max_epochs)
 
-print(solution.sum())
+    print('{0} {1}'.format(epochs, solution.sum()))
 
-if args.pdf:
-    render_output(args, solution)
+    if args.pdf:
+        render_output(args.pdf, N, M, K, solution)
+
+if __name__ == '__main__':
+    main()

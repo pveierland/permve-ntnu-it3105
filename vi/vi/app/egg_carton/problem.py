@@ -7,6 +7,8 @@ class Problem(object):
         self.N = N
         self.K = K
 
+        self.__upper_boundary = min(M, N) * K
+
     def evaluate(self, state):
         for row in range(self.M):
             if state[row,:].sum() > self.K:
@@ -23,10 +25,14 @@ class Problem(object):
             if numpy.fliplr(state).trace(d_i) > self.K:
                 return -1
 
-        return state.sum()
+        return state.sum() / self.__upper_boundary
 
     def initial(self):
         return numpy.zeros((self.M, self.N), dtype=bool)
+
+    def is_terminal(self, state):
+        # Known optimal solution
+        return state.sum() == self.__upper_boundary
 
     def random_successor(self, state):
         successor_state = numpy.copy(state)
@@ -34,6 +40,3 @@ class Problem(object):
         n = random.randrange(self.N)
         successor_state[m, n] = not successor_state[m, n]
         return successor_state
-
-    def temperature(self, epoch):
-        return 100 - epoch
