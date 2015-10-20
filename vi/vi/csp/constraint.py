@@ -1,4 +1,10 @@
 class Constraint(object):
+    @staticmethod
+    def constrain(variables, condition):
+        constraint = Constraint(variables, condition)
+        for variable in variables:
+            variable.constraints.add(constraint)
+
     def __init__(self, variables, condition):
         self.variables = variables
         self.condition = condition

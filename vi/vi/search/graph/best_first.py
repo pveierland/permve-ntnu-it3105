@@ -11,9 +11,9 @@ class BestFirst(object):
         dijkstra      = 3
         astar         = 4
 
-    def __init__(self, problem, strategy):
+    def __init__(self, problem, strategy=None):
         self.problem  = problem
-        self.strategy = strategy
+        self.strategy = strategy or BestFirst.Strategy.astar
 
         self.open_deque        = collections.deque()
         self.open_heap_queue   = []
