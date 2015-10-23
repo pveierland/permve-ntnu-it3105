@@ -1,3 +1,2 @@
-from .state import *
-from .ai import *
+from .board import *
 from .game import *
