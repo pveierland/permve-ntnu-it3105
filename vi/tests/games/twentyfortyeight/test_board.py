@@ -27,6 +27,34 @@ def test_move_up_empty():
         [ 0, 0, 0, 0 ],
         [ 0, 0, 0, 0 ] ])
 
+def test_move_up_first_row():
+    initial_state = Board.from_matrix([
+        [ 2, 4, 8, 16 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ] ])
+
+    result = initial_state.move(Action.move_up).to_matrix()
+    assert_equals(result, [
+        [ 2, 4, 8, 16 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ] ])
+
+def test_move_up_last_row():
+    initial_state = Board.from_matrix([
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 2, 4, 8, 16 ] ])
+
+    result = initial_state.move(Action.move_up).to_matrix()
+    assert_equals(result, [
+        [ 2, 4, 8, 16 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ] ])
+
 def test_move_up_first_equal():
     initial_state = Board.from_matrix([
         [ 2, 0, 0, 0 ],
@@ -125,117 +153,145 @@ def test_move_up_multiple_opposite():
         [ 0, 0, 0,  0 ],
         [ 0, 0, 0,  0 ] ])
 
-#def test_move_down_empty():
-#    initial_state = Board.from_matrix([
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ] ])
-#
-#    result = initial_state.move(Action.move_down).to_matrix()
-#    assert_equals(result, [
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ] ])
-#
-#def test_move_down_first_equal():
-#    initial_state = Board.from_matrix([
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ] ])
-#
-#    result = initial_state.move(Action.move_down).to_matrix()
-#    assert_equals(result, [
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 4, 0, 0, 0 ] ])
-#
-#def test_move_down_first_equal_with_follower():
-#    initial_state = Board.from_matrix([
-#        [ 0, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ] ])
-#
-#    result = initial_state.move(Action.move_down).to_matrix()
-#    assert_equals(result, [
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ],
-#        [ 4, 0, 0, 0 ] ])
-#
-#def test_move_down_middle_equal():
-#    initial_state = Board.from_matrix([
-#        [ 0, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ] ])
-#
-#    result = initial_state.move(Action.move_down).to_matrix()
-#    assert_equals(result, [
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 4, 0, 0, 0 ] ])
-#
-#def test_move_down_double_equal():
-#    initial_state = Board.from_matrix([
-#        [ 2, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ] ])
-#
-#    result = initial_state.move(Action.move_down).to_matrix()
-#    assert_equals(result, [
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 4, 0, 0, 0 ],
-#        [ 4, 0, 0, 0 ] ])
-#
-#def test_move_down_double_different_equal():
-#    initial_state = Board.from_matrix([
-#        [ 2, 0, 0, 0 ],
-#        [ 2, 0, 0, 0 ],
-#        [ 4, 0, 0, 0 ],
-#        [ 4, 0, 0, 0 ] ])
-#
-#    result = initial_state.move(Action.move_down).to_matrix()
-#    assert_equals(result, [
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 4, 0, 0, 0 ],
-#        [ 8, 0, 0, 0 ] ])
-#
-#def test_move_down_multiple_columns():
-#    initial_state = Board.from_matrix([
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 0, 0, 0 ],
-#        [ 0, 8, 0, 0 ],
-#        [ 0, 8, 2, 4 ] ])
-#
-#    result = initial_state.move(Action.move_down).to_matrix()
-#    assert_equals(result, [
-#        [ 0,  0, 0, 0 ],
-#        [ 0,  0, 0, 0 ],
-#        [ 0,  0, 0, 0 ],
-#        [ 0, 16, 2, 4 ] ])
-#
-#def test_move_down_multiple_opposite():
-#    initial_state = Board.from_matrix([
-#        [ 2, 4, 8, 16 ],
-#        [ 0, 0, 0,  0 ],
-#        [ 0, 0, 0,  0 ],
-#        [ 0, 0, 0,  0 ] ])
-#
-#    result = initial_state.move(Action.move_down).to_matrix()
-#    assert_equals(result, [
-#        [ 0, 0, 0,  0 ],
-#        [ 0, 0, 0,  0 ],
-#        [ 0, 0, 0,  0 ],
-#        [ 2, 4, 8, 16 ] ])
+def test_move_down_empty():
+    initial_state = Board.from_matrix([
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ] ])
+
+    result = initial_state.move(Action.move_down).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ] ])
+
+def test_move_down_last_row():
+    initial_state = Board.from_matrix([
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 2, 4, 8, 16 ] ])
+
+    result = initial_state.move(Action.move_down).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 2, 4, 8, 16 ] ])
+
+def test_move_down_first_row():
+    initial_state = Board.from_matrix([
+        [ 2, 4, 8, 16 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ] ])
+
+    result = initial_state.move(Action.move_down).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 2, 4, 8, 16 ] ])
+
+def test_move_down_first_equal():
+    initial_state = Board.from_matrix([
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ] ])
+
+    result = initial_state.move(Action.move_down).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 4, 0, 0, 0 ] ])
+
+def test_move_down_first_equal_with_follower():
+    initial_state = Board.from_matrix([
+        [ 0, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ] ])
+
+    result = initial_state.move(Action.move_down).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ],
+        [ 4, 0, 0, 0 ] ])
+
+def test_move_down_middle_equal():
+    initial_state = Board.from_matrix([
+        [ 0, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ] ])
+
+    result = initial_state.move(Action.move_down).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 4, 0, 0, 0 ] ])
+
+def test_move_down_double_equal():
+    initial_state = Board.from_matrix([
+        [ 2, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ] ])
+
+    result = initial_state.move(Action.move_down).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 4, 0, 0, 0 ],
+        [ 4, 0, 0, 0 ] ])
+
+def test_move_down_double_different_equal():
+    initial_state = Board.from_matrix([
+        [ 2, 0, 0, 0 ],
+        [ 2, 0, 0, 0 ],
+        [ 4, 0, 0, 0 ],
+        [ 4, 0, 0, 0 ] ])
+
+    result = initial_state.move(Action.move_down).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 4, 0, 0, 0 ],
+        [ 8, 0, 0, 0 ] ])
+
+def test_move_down_multiple_columns():
+    initial_state = Board.from_matrix([
+        [ 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0 ],
+        [ 0, 8, 0, 0 ],
+        [ 0, 8, 2, 4 ] ])
+
+    result = initial_state.move(Action.move_down).to_matrix()
+    assert_equals(result, [
+        [ 0,  0, 0, 0 ],
+        [ 0,  0, 0, 0 ],
+        [ 0,  0, 0, 0 ],
+        [ 0, 16, 2, 4 ] ])
+
+def test_move_down_multiple_opposite():
+    initial_state = Board.from_matrix([
+        [ 2, 4, 8, 16 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ] ])
+
+    result = initial_state.move(Action.move_down).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 0, 0, 0,  0 ],
+        [ 2, 4, 8, 16 ] ])
 
 def test_move_left_empty():
     initial_state = Board.from_matrix([
@@ -250,6 +306,34 @@ def test_move_left_empty():
         [ 0, 0, 0, 0 ],
         [ 0, 0, 0, 0 ],
         [ 0, 0, 0, 0 ] ])
+
+def test_move_left_first_column():
+    initial_state = Board.from_matrix([
+        [  2, 0, 0, 0 ],
+        [  4, 0, 0, 0 ],
+        [  8, 0, 0, 0 ],
+        [ 16, 0, 0, 0 ] ])
+
+    result = initial_state.move(Action.move_left).to_matrix()
+    assert_equals(result, [
+        [  2, 0, 0, 0 ],
+        [  4, 0, 0, 0 ],
+        [  8, 0, 0, 0 ],
+        [ 16, 0, 0, 0 ] ])
+
+def test_move_left_last_column():
+    initial_state = Board.from_matrix([
+        [ 0, 0, 0,  2 ],
+        [ 0, 0, 0,  4 ],
+        [ 0, 0, 0,  8 ],
+        [ 0, 0, 0, 16 ] ])
+
+    result = initial_state.move(Action.move_left).to_matrix()
+    assert_equals(result, [
+        [  2, 0, 0, 0 ],
+        [  4, 0, 0, 0 ],
+        [  8, 0, 0, 0 ],
+        [ 16, 0, 0, 0 ] ])
 
 def test_move_left_first_equal():
     initial_state = Board.from_matrix([
@@ -362,6 +446,34 @@ def test_move_right_empty():
         [ 0, 0, 0, 0 ],
         [ 0, 0, 0, 0 ],
         [ 0, 0, 0, 0 ] ])
+
+def test_move_right_last_column():
+    initial_state = Board.from_matrix([
+        [ 0, 0, 0,  2 ],
+        [ 0, 0, 0,  4 ],
+        [ 0, 0, 0,  8 ],
+        [ 0, 0, 0, 16 ] ])
+
+    result = initial_state.move(Action.move_right).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0,  2 ],
+        [ 0, 0, 0,  4 ],
+        [ 0, 0, 0,  8 ],
+        [ 0, 0, 0, 16 ] ])
+
+def test_move_right_first_column():
+    initial_state = Board.from_matrix([
+        [  2, 0, 0, 0 ],
+        [  4, 0, 0, 0 ],
+        [  8, 0, 0, 0 ],
+        [ 16, 0, 0, 0 ] ])
+
+    result = initial_state.move(Action.move_right).to_matrix()
+    assert_equals(result, [
+        [ 0, 0, 0,  2 ],
+        [ 0, 0, 0,  4 ],
+        [ 0, 0, 0,  8 ],
+        [ 0, 0, 0, 16 ] ])
 
 def test_move_right_first_equal():
     initial_state = Board.from_matrix([

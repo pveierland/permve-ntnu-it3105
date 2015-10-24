@@ -11,8 +11,15 @@ def _initialize_move_lookup_table():
     def unpack_column(row):
         return (row | (row << 12) | (row << 24) | (row << 36)) & 0x000F000F000F000F
 
+    def pack_column(row):
+        return ((row >> 36) & 0xF000) | \
+               ((row >> 24) & 0x0F00) | \
+               ((row >> 12) & 0x00F0) | \
+               (row & 0xF)
+
+
     move_lookup_table = numpy.zeros(
-        (4, numpy.iinfo(numpy.uint16).max + 1), dtype=numpy.uint16)
+        (4, numpy.iinfo(numpy.uint16).max + 1), dtype=int)
 
     for row in range(numpy.iinfo(numpy.uint16).max + 1):
         result        = 0
@@ -122,24 +129,23 @@ class Board(object):
         return Board.value_from_raw(self.get_raw_value(row, column))
 
     def move(self, action):
+        state = self.__state
         if action is Action.move_up or action is Action.move_down:
-            state = _transpose_board_state(self.__state)
-            
-            print("WOOT! {0}".format(Board.__move_lookup_table[action, (state >> 0) & 0xFFFF]))
-
+            transposed = _transpose_board_state(self.__state)
             return Board(state ^
-                (Board.__move_lookup_table[action, (state >>  0) & 0xFFFF] <<  0) ^
-                (Board.__move_lookup_table[action, (state >> 16) & 0xFFFF] <<  4) ^
-                (Board.__move_lookup_table[action, (state >> 32) & 0xFFFF] <<  8) ^
-                (Board.__move_lookup_table[action, (state >> 48) & 0xFFFF] << 12))
+                (Board.__move_lookup_table[action, (transposed >>  0) & 0xFFFF] <<  0) ^
+                (Board.__move_lookup_table[action, (transposed >> 16) & 0xFFFF] <<  4) ^
+                (Board.__move_lookup_table[action, (transposed >> 32) & 0xFFFF] <<  8) ^
+                (Board.__move_lookup_table[action, (transposed >> 48) & 0xFFFF] << 12))
         else:
-            state = self.__state
-
             return Board(state ^
                 (Board.__move_lookup_table[action, (state >>  0) & 0xFFFF] <<  0) ^
                 (Board.__move_lookup_table[action, (state >> 16) & 0xFFFF] << 16) ^
                 (Board.__move_lookup_table[action, (state >> 32) & 0xFFFF] << 32) ^
                 (Board.__move_lookup_table[action, (state >> 48) & 0xFFFF] << 48))
+
+    def raw(self):
+        return self.__state
 
     def set_raw_value(self, row, column, raw_value):
         offset = 0b10000 * row + 0b100 * column
