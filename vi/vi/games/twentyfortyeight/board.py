@@ -3,6 +3,28 @@ import numpy
 
 from vi.search.grid import Action
 
+def _initialize_heuristic_lookup_table():
+    heuristic_lookup_table = numpy.zeros(
+        numpy.iinfo(numpy.uint16).max + 1, dtype=float)
+
+    SCORE_LOST_PENALTY = 200000.0
+    SCORE_MONOTONICITY_POWER = 4.0
+    SCORE_MONOTONICITY_WEIGHT = 47.0
+    SCORE_SUM_POWER = 3.5
+    SCORE_SUM_WEIGHT = 11.0
+    SCORE_MERGES_WEIGHT = 700.0
+    SCORE_EMPTY_WEIGHT = 270.0
+
+    for row in range(numpy.iinfo(numpy.uint16).max + 1):
+        empty = 0
+        for i in range(4):
+            empty += ((row >> (4 * i)) & 0b1111) == 0
+
+        heuristic_lookup_table[row] = \
+            SCORE_LOST_PENALTY + SCORE_EMPTY_WEIGHT * empty
+
+    return heuristic_lookup_table
+
 def _initialize_move_lookup_table():
     def reverse_row(row):
         return ((row & 0xF000) >> 12) | ((row & 0x0F00) >> 4) | \
@@ -16,7 +38,6 @@ def _initialize_move_lookup_table():
                ((row >> 24) & 0x0F00) | \
                ((row >> 12) & 0x00F0) | \
                (row & 0xF)
-
 
     move_lookup_table = numpy.zeros(
         (4, numpy.iinfo(numpy.uint16).max + 1), dtype=int)
@@ -64,7 +85,22 @@ def _initialize_move_lookup_table():
 
     return move_lookup_table
 
+def _initialize_score_lookup_table():
+    score_lookup_table = numpy.zeros(
+        numpy.iinfo(numpy.uint16).max + 1, dtype=float)
+
+    for row in range(numpy.iinfo(numpy.uint16).max + 1):
+        score = 0.0
+        for i in range(4):
+            rank = (row >> (4 * i)) & 0b1111
+            if rank >= 2:
+                score += (rank - 1) * (1 << rank)
+        score_lookup_table[row] = score
+
+    return score_lookup_table
+
 def _transpose_board_state(board_state):
+    board_state = int(board_state)
     a1 = board_state & 0xF0F00F0FF0F00F0F
     a2 = board_state & 0x0000F0F00000F0F0
     a3 = board_state & 0x0F0F00000F0F0000
@@ -91,7 +127,10 @@ class Board(object):
                 board.set_value(row, column, column_value)
         return board
 
-    __move_lookup_table = _initialize_move_lookup_table()
+    __heuristic_lookup_table = _initialize_heuristic_lookup_table()
+    __move_lookup_table      = _initialize_move_lookup_table()
+    __score_lookup_table     = _initialize_score_lookup_table()
+
     __slots__ = ['__state']
 
     def __init__(self, initializer=0):
@@ -128,6 +167,19 @@ class Board(object):
     def get_value(self, row, column):
         return Board.value_from_raw(self.get_raw_value(row, column))
 
+    def heuristic(self):
+        state = self.__state
+        transposed_state = _transpose_board_state(state)
+
+        return (Board.__heuristic_lookup_table[(state >>  0) & 0xFFFF] +
+                Board.__heuristic_lookup_table[(state >> 16) & 0xFFFF] +
+                Board.__heuristic_lookup_table[(state >> 32) & 0xFFFF] +
+                Board.__heuristic_lookup_table[(state >> 48) & 0xFFFF] +
+                Board.__heuristic_lookup_table[(transposed_state >>  0) & 0xFFFF] +
+                Board.__heuristic_lookup_table[(transposed_state >> 16) & 0xFFFF] +
+                Board.__heuristic_lookup_table[(transposed_state >> 32) & 0xFFFF] +
+                Board.__heuristic_lookup_table[(transposed_state >> 48) & 0xFFFF])
+
     def move(self, action):
         state = self.__state
         if action is Action.move_up or action is Action.move_down:
@@ -147,6 +199,13 @@ class Board(object):
     def raw(self):
         return self.__state
 
+    def score(self):
+        state = self.__state
+        return (Board.__score_lookup_table[(state >>  0) & 0xFFFF] +
+                Board.__score_lookup_table[(state >> 16) & 0xFFFF] +
+                Board.__score_lookup_table[(state >> 32) & 0xFFFF] +
+                Board.__score_lookup_table[(state >> 48) & 0xFFFF])
+
     def set_raw_value(self, row, column, raw_value):
         offset = 0b10000 * row + 0b100 * column
         self.__state = (self.__state & ~(0b1111 << offset)) | (raw_value << offset)
@@ -154,7 +213,11 @@ class Board(object):
     def set_value(self, row, column, value):
         self.set_raw_value(row, column, Board.value_to_raw(value))
 
+    def spawn(self, row, column, value):
+        new_board = Board(self.__state)
+        new_board.set_value(row, column, value)
+        return new_board
+
     def to_matrix(self):
-        return [ [ self.get_value(row, column)
-                   for column in range(4) ]
+        return [ [ self.get_value(row, column) for column in range(4) ]
                  for row in range (4) ]
