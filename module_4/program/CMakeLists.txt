@@ -9,6 +9,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 #find_package(Boost REQUIRED COMPONENTS mpi serialization)
 #include_directories(${Boost_INCLUDE_DIR})
 
-add_executable(2048 2048.cpp board.cpp)
+add_executable(2048 2048.cpp ai.cpp board.cpp)
 #target_link_libraries(parallel ${Boost_LIBRARIES} ${MPI_LIBRARIES})
 
