@@ -1,7 +1,7 @@
-#ifndef VI_AI_H
-#define VI_AI_H
+#ifndef VI_2048_AI_H
+#define VI_2048_AI_H
 
-#include "board.h"
+#include "vi_2048_board.h"
 
 #include <algorithm>
 #include <unordered_map>
@@ -26,13 +26,14 @@ namespace vi
 
 		std::unordered_map<board::state, transposition_table_entry> transposition_table{};
 
-		unsigned max_depth = 0;
-		unsigned moves_evaluated = 0;
-		unsigned cache_hits = 0;
-		unsigned cache_misses = 0;
-		unsigned probability_prune_hits = 0;
-		unsigned probability_prune_misses = 0;
-	};
+        unsigned depth_limit = 0;
+        unsigned max_depth = 0;
+        unsigned moves_evaluated = 0;
+        unsigned cache_hits = 0;
+        unsigned cache_misses = 0;
+        unsigned probability_prune_hits = 0;
+        unsigned probability_prune_misses = 0;
+    };
 }
 
-#endif // VI_AI_H
+#endif // VI_2048_AI_H

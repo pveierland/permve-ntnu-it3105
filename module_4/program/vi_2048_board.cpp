@@ -1,4 +1,4 @@
-#include "board.h"
+#include "vi_2048_board.h"
 
 #include <algorithm>
 #include <cstdio>

@@ -1,5 +1,5 @@
-#ifndef VI_BOARD_H
-#define VI_BOARD_H
+#ifndef VI_2048_BOARD_H
+#define VI_2048_BOARD_H
 
 #include <cassert>
 #include <cmath>
@@ -45,15 +45,17 @@ namespace vi
             : board_state(board_state) { }
         board(const board&) = default;
 
-        unsigned  get_available_count() const;
+        board     move(action) const;
+        board     spawn(unsigned row, unsigned column, unsigned value) const;
         heuristic get_heuristic() const;
         score     get_score() const;
+        unsigned  get_available_count() const;
+        unsigned  get_highest_raw_value() const;
+        unsigned  get_highest_value() const;
         unsigned  get_raw_value(unsigned row, unsigned column) const;
         unsigned  get_value(unsigned row, unsigned column) const;
-        board     move(action) const;
         void      set_raw_value(unsigned row, unsigned column, unsigned raw_value);
         void      set_value(unsigned row, unsigned column, unsigned value);
-        board     spawn(unsigned row, unsigned column, unsigned value) const;
 
         static std::vector<heuristic> heuristic_lut;
         static std::vector<score>     score_lut;
@@ -137,14 +139,50 @@ namespace vi
     {
         const auto transposed_state = transpose_board(board_state);
 
-        return (heuristic_lut[(board_state      >>  0) & 0xFFFF] +
-                heuristic_lut[(board_state      >> 16) & 0xFFFF] +
-                heuristic_lut[(board_state      >> 32) & 0xFFFF] +
-                heuristic_lut[(board_state      >> 48) & 0xFFFF] +
-                heuristic_lut[(transposed_state >>  0) & 0xFFFF] +
-                heuristic_lut[(transposed_state >> 16) & 0xFFFF] +
-                heuristic_lut[(transposed_state >> 32) & 0xFFFF] +
-                heuristic_lut[(transposed_state >> 48) & 0xFFFF]);
+        return (heuristic_lut[(board_state      >>  0) & 0xFFFFU] +
+                heuristic_lut[(board_state      >> 16) & 0xFFFFU] +
+                heuristic_lut[(board_state      >> 32) & 0xFFFFU] +
+                heuristic_lut[(board_state      >> 48) & 0xFFFFU] +
+                heuristic_lut[(transposed_state >>  0) & 0xFFFFU] +
+                heuristic_lut[(transposed_state >> 16) & 0xFFFFU] +
+                heuristic_lut[(transposed_state >> 32) & 0xFFFFU] +
+                heuristic_lut[(transposed_state >> 48) & 0xFFFFU]);
+    }
+
+    inline
+    unsigned
+    board::get_highest_raw_value() const
+    {
+        unsigned highest_raw = 0;
+        state tmp = board_state;
+
+        for (unsigned i = 0; i != 16; ++i)
+        {
+            const auto raw_value = tmp & 0xFU;
+            if (raw_value > highest_raw)
+            {
+                highest_raw = raw_value;
+            }
+            tmp >>= 4;
+        }
+
+        return highest_raw;
+    }
+
+    inline
+    unsigned
+    board::get_highest_value() const
+    {
+        const auto raw = get_highest_raw_value();
+        return raw ? 1 << raw : 0;
+    }
+    
+    inline
+    unsigned
+    board::get_raw_value(const unsigned row, const unsigned column) const
+    {
+        const auto offset = 16U * row + 4U * column;
+        return (board_state >> offset) & 0xFU;
     }
 
     inline
@@ -155,6 +193,14 @@ namespace vi
                score_lut[(board_state >> 16) & 0xFFFFU] +
                score_lut[(board_state >> 32) & 0xFFFFU] +
                score_lut[(board_state >> 48) & 0xFFFFU];
+    }
+    
+    inline
+    unsigned
+    board::get_value(const unsigned row, const unsigned column) const
+    {
+        const auto raw = get_raw_value(row, column);
+        return raw ? 1 << raw : 0;
     }
 
     inline
@@ -205,22 +251,6 @@ namespace vi
     }
 
     inline
-    unsigned
-    board::get_raw_value(const unsigned row, const unsigned column) const
-    {
-        const auto offset = 16U * row + 4U * column;
-        return (board_state >> offset) & 0xFU;
-    }
-
-    inline
-    unsigned
-    board::get_value(const unsigned row, const unsigned column) const
-    {
-        const auto raw = get_raw_value(row, column);
-        return raw ? 1 << raw : 0;
-    }
-
-    inline
     void
     board::set_raw_value(const unsigned row, const unsigned column, const unsigned raw_value)
     {
@@ -246,5 +276,5 @@ namespace vi
     }
 }
 
-#endif // VI_BOARD_H
+#endif // VI_2048_BOARD_H
 

@@ -1,4 +1,4 @@
-#include "ai.h"
+#include "vi_2048_ai.h"
 
 #include <iostream>
 
@@ -61,7 +61,7 @@ namespace vi
 			++probability_prune_misses;
 		}
 
-		if (depth >= 4)
+		if (depth >= depth_limit)
 		{
 			max_depth = std::max(max_depth, depth);
 			return board.get_heuristic();
