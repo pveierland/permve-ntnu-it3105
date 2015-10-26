@@ -215,7 +215,47 @@ namespace vi
                 }
             }
 
-            heuristic_lut[row] = 10.0 + num_merges * 0.7 + 0.2 * second_merges + 0.1 * third_merges - pow(5, bad_tiles) / 100.0; //GOOD 15 min 4K @ depth 7
+//            heuristic_lut[row] = 10.0 + num_merges * 0.7 + 0.2 * second_merges + 0.1 * third_merges - pow(5, bad_tiles) / 100.0; //GOOD 15 min 4K @ depth 7
+
+//            heuristic_lut[row] =
+//                0.3
+//                + 0.25 * num_merges
+//                + 0.15 * second_merges
+//                + 0.05 * third_merges
+//                - pow(5, bad_tiles) / 3125.0;
+            
+            // 61596
+//            heuristic_lut[row] =
+//                5.0
+//                + 0.5 * num_merges
+//                + 0.15 * second_merges
+//                + 0.05 * third_merges
+//                - 5.0 * pow(5, bad_tiles) / 3125.0;
+           
+            // 37020
+            // 61524
+            heuristic_lut[row] =
+                5.0
+                + 0.5 * num_merges
+                + 0.15 * second_merges
+                + 0.05 * third_merges
+                - 8.0 * pow(5, bad_tiles) / 3125.0;
+            
+            // 37372
+            heuristic_lut[row] =
+                5.0
+                + 0.5 * num_merges
+                + 0.15 * second_merges
+                + 0.05 * third_merges
+                - 10.0 * pow(5, bad_tiles) / 3125.0;
+            
+            heuristic_lut[row] =
+                100.0
+                + 10.0 * num_merges
+                + 5.0 * second_merges
+                + 2.5 * third_merges
+                - 50.0 * pow(5, bad_tiles) / 625.0;
+
             //heuristic_lut[row] = 0.2 + num_merges * 0.5 + 0.2 * second_merges + 0.1 * third_merges - pow(2, bad_tiles) / 16.0; BAD
             //heuristic_lut[row] = 0.45 + num_merges * 0.2 + 0.1 * second_merges + 0.05 * third_merges - pow(2, bad_tiles) / 160.0; // ISH
 
@@ -225,7 +265,7 @@ namespace vi
 //                + 50 * second_merges + 25 * third_merges;// -pow(5, bad_tiles);
 
             /*
-            
+
 
             // Heuristic score
             float sum = 0;

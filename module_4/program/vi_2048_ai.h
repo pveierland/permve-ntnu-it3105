@@ -27,7 +27,7 @@ namespace vi
         std::unordered_map<board, transposition_table_entry> transposition_table{};
 
         unsigned depth_limit = 0;
-        float    probability_limit = 0.0f; 
+        float    probability_limit = 0.0f;
 
         unsigned max_depth = 0;
         unsigned moves_evaluated = 0;

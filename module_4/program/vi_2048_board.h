@@ -179,7 +179,7 @@ namespace vi
         const auto raw = get_highest_raw_value();
         return raw ? 1 << raw : 0;
     }
-    
+
     inline
     unsigned
     board::get_raw_value(const unsigned row, const unsigned column) const
@@ -197,7 +197,7 @@ namespace vi
                score_lut[(board_state >> 32) & 0xFFFFU] +
                score_lut[(board_state >> 48) & 0xFFFFU];
     }
-    
+
     inline
     unsigned
     board::get_value(const unsigned row, const unsigned column) const

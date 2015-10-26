@@ -94,7 +94,7 @@ namespace vi
         const auto successor_probability_4 = 0.1f * probability / available_tiles;
 
         const board::state board_state = board.board_state;
-        
+
         board::state tmp = board_state;
         board::state tile = 1;
 
