@@ -16,7 +16,7 @@ namespace vi
         {
             for (unsigned column = 0; column != 4; ++column)
             {
-                printf("%5d ", board.get_value(row, column));
+                printf("%6d ", board.get_value(row, column));
             }
             std::cout << std::endl;
         }
@@ -291,80 +291,47 @@ namespace vi
 
         for (unsigned row = 0; row != board::lut_size; ++row)
         {
-			/*
-            board::row result        = 0;
-            auto       output_offset = 0U;
+            auto result = 0;
+            auto tmp    = row;
+            auto prev = 0, next = 0, index = 0, output_offset = 0;
 
-            auto index = 0U;
-            while (index < 3U)
+            while (index != 4)
             {
-                const auto offset       = 4U * index;
-                const auto current_cell = (row & (0xFU << offset)) >> offset;
-
-                if (current_cell)
+                do
                 {
-                    const auto next_cell = (row & (0xFU << (offset + 4U))) >> (offset + 4);
+                    next = tmp & 0xF;
+                    ++index;
+                    tmp >>= 4;
+                }
+                while (!next && index != 4);
 
-                    if (current_cell == next_cell)
+                if (prev)
+                {
+                    if (next == prev)
                     {
-                        result |= (current_cell + 1U) << output_offset;
-                        ++index;
+                        const auto increment = next != 0xFU ? 1U : 0U;
+                        result |= (next + increment) << output_offset;
+                        output_offset += 4;
+                        prev = 0;
+                        continue;
                     }
-                    else
+                    else if (prev)
                     {
-                        result |= current_cell << output_offset;
+                        result |= prev << output_offset;
+                        output_offset += 4;
                     }
-
-                    output_offset += 4U;
                 }
 
-                ++index;
+                prev = next;
             }
 
-            if (index < 4U)
+            if (prev)
             {
-                const auto offset = 4U * index;
-                result |= ((row & (0xFU << offset)) >> offset) << output_offset;
+                result |= prev << output_offset;
             }
 
-            const auto rev_result   = reverse_row(result);
-            const auto rev_row      = reverse_row(row);
-			*/
-
-			unsigned line[4] = {
-				(row >> 0) & 0xf,
-				(row >> 4) & 0xf,
-				(row >> 8) & 0xf,
-				(row >> 12) & 0xf
-			};
-
-			for (int i = 0; i < 3; ++i) {
-				int j;
-				for (j = i + 1; j < 4; ++j) {
-					if (line[j] != 0) break;
-				}
-				if (j == 4) break; // no more tiles to the right
-
-				if (line[i] == 0) {
-					line[i] = line[j];
-					line[j] = 0;
-					i--; // retry this entry
-				}
-				else if (line[i] == line[j]) {
-					if (line[i] != 0xf) {
-						/* Pretend that 32768 + 32768 = 32768 (representational limit). */
-						line[i]++;
-					}
-					line[j] = 0;
-				}
-			}
-
-			auto result = (line[0] << 0) |
-				(line[1] << 4) |
-				(line[2] << 8) |
-				(line[3] << 12);
-			auto rev_result = reverse_row(result);
-			unsigned rev_row = reverse_row(row);
+			const auto rev_result = reverse_row(result);
+			const auto rev_row    = reverse_row(row);
 
             move_lut.up[row]        = unpack_column(row)     ^ unpack_column(result);
             move_lut.down[rev_row]  = unpack_column(rev_row) ^ unpack_column(rev_result);

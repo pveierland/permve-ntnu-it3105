@@ -213,35 +213,35 @@ namespace vi
             {
                 const auto transposed_state = transpose_board(board_state);
                 return board{board_state ^
-                    (move_lut.up[(transposed_state >>  0) & 0xFFFF] <<  0) ^
-                    (move_lut.up[(transposed_state >> 16) & 0xFFFF] <<  4) ^
-                    (move_lut.up[(transposed_state >> 32) & 0xFFFF] <<  8) ^
-                    (move_lut.up[(transposed_state >> 48) & 0xFFFF] << 12)};
+                    (move_lut.up[(transposed_state >>  0) & 0xFFFFU] <<  0) ^
+                    (move_lut.up[(transposed_state >> 16) & 0xFFFFU] <<  4) ^
+                    (move_lut.up[(transposed_state >> 32) & 0xFFFFU] <<  8) ^
+                    (move_lut.up[(transposed_state >> 48) & 0xFFFFU] << 12)};
             }
             case vi::action::down:
             {
                 const auto transposed_state = transpose_board(board_state);
                 return board{board_state ^
-                    (move_lut.down[(transposed_state >>  0) & 0xFFFF] <<  0) ^
-                    (move_lut.down[(transposed_state >> 16) & 0xFFFF] <<  4) ^
-                    (move_lut.down[(transposed_state >> 32) & 0xFFFF] <<  8) ^
-                    (move_lut.down[(transposed_state >> 48) & 0xFFFF] << 12)};
+                    (move_lut.down[(transposed_state >>  0) & 0xFFFFU] <<  0) ^
+                    (move_lut.down[(transposed_state >> 16) & 0xFFFFU] <<  4) ^
+                    (move_lut.down[(transposed_state >> 32) & 0xFFFFU] <<  8) ^
+                    (move_lut.down[(transposed_state >> 48) & 0xFFFFU] << 12)};
             }
             case vi::action::left:
             {
                 return board{board_state ^
-                    (static_cast<board::state>(move_lut.left[(board_state >>  0) & 0xFFFF]) <<  0) ^
-                    (static_cast<board::state>(move_lut.left[(board_state >> 16) & 0xFFFF]) << 16) ^
-                    (static_cast<board::state>(move_lut.left[(board_state >> 32) & 0xFFFF]) << 32) ^
-                    (static_cast<board::state>(move_lut.left[(board_state >> 48) & 0xFFFF]) << 48)};
+                    (static_cast<board::state>(move_lut.left[(board_state >>  0) & 0xFFFFU]) <<  0) ^
+                    (static_cast<board::state>(move_lut.left[(board_state >> 16) & 0xFFFFU]) << 16) ^
+                    (static_cast<board::state>(move_lut.left[(board_state >> 32) & 0xFFFFU]) << 32) ^
+                    (static_cast<board::state>(move_lut.left[(board_state >> 48) & 0xFFFFU]) << 48)};
             }
             case vi::action::right:
             {
                 return board{board_state ^
-                    (static_cast<board::state>(move_lut.right[(board_state >>  0) & 0xFFFF]) <<  0) ^
-                    (static_cast<board::state>(move_lut.right[(board_state >> 16) & 0xFFFF]) << 16) ^
-                    (static_cast<board::state>(move_lut.right[(board_state >> 32) & 0xFFFF]) << 32) ^
-                    (static_cast<board::state>(move_lut.right[(board_state >> 48) & 0xFFFF]) << 48)};
+                    (static_cast<board::state>(move_lut.right[(board_state >>  0) & 0xFFFFU]) <<  0) ^
+                    (static_cast<board::state>(move_lut.right[(board_state >> 16) & 0xFFFFU]) << 16) ^
+                    (static_cast<board::state>(move_lut.right[(board_state >> 32) & 0xFFFFU]) << 32) ^
+                    (static_cast<board::state>(move_lut.right[(board_state >> 48) & 0xFFFFU]) << 48)};
             }
             default:
             {
