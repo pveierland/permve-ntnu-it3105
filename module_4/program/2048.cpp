@@ -79,6 +79,6 @@ int main()
 //        std::cout << board << std::endl;
     }
 
-    std::cout << "GAME OVER! FINAL SCORE = " << board.get_score() << std::endl;
+    std::cout << "GAME OVER! FINAL SCORE = " << board.get_score() << " LEAFS = " << ai.leaf_nodes << std::endl;
 }
 

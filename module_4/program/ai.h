@@ -28,6 +28,7 @@ namespace vi
         unsigned max_depth       = 0;
         unsigned moves_evaluated = 0;
         unsigned cache_hits      = 0;
+        unsigned leaf_nodes      = 0;
     };
 
     inline
@@ -45,7 +46,7 @@ namespace vi
             const auto move      = static_cast<action>(a);
             const auto new_board = board.move(move);
 
-            if (new_board != board)
+//            if (new_board != board)
             {
                 const auto score = score_tilespawn_node(board.move(move), 0, 1.0) + 0.000001;
                 if (score > best.score)
@@ -80,22 +81,24 @@ namespace vi
     board::heuristic
     ai::score_tilespawn_node(const vi::board board, const depth depth, probability probability)
     {
-        if (probability < 0.0001 or depth >= 2)
+        //if (probability < 0.0001 or depth >= 2)
+        if (depth >= 4)
         {
+            ++leaf_nodes;
             max_depth = std::max(max_depth, depth);
             return board.get_heuristic();
         }
 
-        auto entry = transposition_table.find(board.board_state);
+        //auto entry = transposition_table.find(board.board_state);
 
-        if (entry != transposition_table.end())
-        {
-            if (entry->second.depth <= depth)
-            {
-                ++cache_hits;
-                return entry->second.score;
-            }
-        }
+        //if (entry != transposition_table.end())
+        //{
+        //    if (entry->second.depth <= depth)
+        //    {
+        //        ++cache_hits;
+        //        return entry->second.score;
+        //    }
+        //}
 
         const auto available = board.get_available_count();
         probability /= available;
@@ -118,7 +121,7 @@ namespace vi
 
         score /= available;
 
-        transposition_table[board_state] = transposition_table_entry{depth, score};
+        //transposition_table[board_state] = transposition_table_entry{depth, score};
 
         return score;
     }
