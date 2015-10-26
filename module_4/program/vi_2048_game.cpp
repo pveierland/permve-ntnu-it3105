@@ -44,16 +44,15 @@ namespace vi
     bool
     is_game_over()
     {
-        int a = 0;
-        for (; a != 4; ++a)
+        vi::move_type move = vi::move::up;
+        for (; move != vi::move::invalid; ++move)
         {
-            const auto move = static_cast<vi::action>(a);
             if (current_board.move(move) != current_board)
             {
                 break;
             }
         }
-        return a == 4;
+        return move == vi::move::invalid;
     }
 
     static inline
@@ -64,9 +63,10 @@ namespace vi
     }
     
     void
-    configure(unsigned depth_limit)
+    configure(const unsigned depth_limit, const float probability_limit)
     {
-        ai.depth_limit = depth_limit;
+        ai.depth_limit       = depth_limit;
+        ai.probability_limit = probability_limit;
     }
 
     void

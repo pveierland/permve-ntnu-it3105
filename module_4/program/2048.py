@@ -8,6 +8,7 @@ import visuals
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--depth_limit', type=int, default=4)
+parser.add_argument('--probability_limit', type=float, default=0.0001)
 parser.add_argument('--nogui', action='store_true')
 args = parser.parse_args()
 
@@ -15,7 +16,7 @@ if not args.nogui:
     gameWindow = visuals.GameWindow()
 
 vi_2048_python.reset_game()
-vi_2048_python.configure(args.depth_limit)
+vi_2048_python.configure(args.depth_limit, args.probability_limit)
 
 while True:
     state = vi_2048_python.step_game()

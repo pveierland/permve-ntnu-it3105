@@ -11,13 +11,16 @@
 
 namespace vi
 {
-    enum class action : unsigned
+    using move_type = unsigned;
+
+    namespace move
     {
-        up    = 0,
-        down  = 1,
-        left  = 2,
-        right = 3
-    };
+        constexpr move_type up      = 0;
+        constexpr move_type down    = 1;
+        constexpr move_type left    = 2;
+        constexpr move_type right   = 3;
+        constexpr move_type invalid = 4;
+    }
 
     struct board
     {
@@ -45,7 +48,7 @@ namespace vi
             : board_state(board_state) { }
         board(const board&) = default;
 
-        board     move(action) const;
+        board     move(move_type) const;
         board     spawn(unsigned row, unsigned column, unsigned value) const;
         heuristic get_heuristic() const;
         score     get_score() const;
@@ -205,11 +208,11 @@ namespace vi
 
     inline
     board
-    board::move(const vi::action action) const
+    board::move(const vi::move_type move) const
     {
-        switch (action)
+        switch (move)
         {
-            case vi::action::up:
+            case vi::move::up:
             {
                 const auto transposed_state = transpose_board(board_state);
                 return board{board_state ^
@@ -218,7 +221,7 @@ namespace vi
                     (move_lut.up[(transposed_state >> 32) & 0xFFFFU] <<  8) ^
                     (move_lut.up[(transposed_state >> 48) & 0xFFFFU] << 12)};
             }
-            case vi::action::down:
+            case vi::move::down:
             {
                 const auto transposed_state = transpose_board(board_state);
                 return board{board_state ^
@@ -227,7 +230,7 @@ namespace vi
                     (move_lut.down[(transposed_state >> 32) & 0xFFFFU] <<  8) ^
                     (move_lut.down[(transposed_state >> 48) & 0xFFFFU] << 12)};
             }
-            case vi::action::left:
+            case vi::move::left:
             {
                 return board{board_state ^
                     (static_cast<board::state>(move_lut.left[(board_state >>  0) & 0xFFFFU]) <<  0) ^
@@ -235,7 +238,7 @@ namespace vi
                     (static_cast<board::state>(move_lut.left[(board_state >> 32) & 0xFFFFU]) << 32) ^
                     (static_cast<board::state>(move_lut.left[(board_state >> 48) & 0xFFFFU]) << 48)};
             }
-            case vi::action::right:
+            case vi::move::right:
             {
                 return board{board_state ^
                     (static_cast<board::state>(move_lut.right[(board_state >>  0) & 0xFFFFU]) <<  0) ^

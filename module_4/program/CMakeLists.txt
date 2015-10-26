@@ -20,5 +20,3 @@ PYTHON_ADD_MODULE(
 
 target_link_libraries(vi_2048_python ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
 
-#add_executable(vi_2048_cli vi_2048.cpp ai.cpp board.cpp)
-

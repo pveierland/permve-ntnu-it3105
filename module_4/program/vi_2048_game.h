@@ -4,7 +4,7 @@
 namespace vi
 {
     unsigned long step_game();
-    void          configure(unsigned depth_limit);
+    void          configure(unsigned depth_limit, float probability_limit);
     void          reset_game();
 }
 

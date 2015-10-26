@@ -9,24 +9,26 @@
 
 namespace vi
 {
-	struct ai
-	{
-		using depth_type       = unsigned;
-		using probability_type = double;
+    struct ai
+    {
+        using depth_type       = unsigned;
+        using probability_type = double;
 
-		action           find_move(board);
-		board::heuristic score_move_node(board, depth_type, probability_type);
-		board::heuristic score_tilespawn_node(board, depth_type, probability_type);
+        move_type        find_move(board);
+        board::heuristic score_player_node(board, depth_type, probability_type);
+        board::heuristic score_chance_node(board, depth_type, probability_type);
 
-		struct transposition_table_entry
-		{
-			depth_type       depth;
-			board::heuristic score;
-		};
+        struct transposition_table_entry
+        {
+            depth_type       depth;
+            board::heuristic score;
+        };
 
-		std::unordered_map<board, transposition_table_entry> transposition_table{};
+        std::unordered_map<board, transposition_table_entry> transposition_table{};
 
         unsigned depth_limit = 0;
+        float    probability_limit = 0.0f; 
+
         unsigned max_depth = 0;
         unsigned moves_evaluated = 0;
         unsigned cache_hits = 0;
@@ -37,3 +39,4 @@ namespace vi
 }
 
 #endif // VI_2048_AI_H
+
