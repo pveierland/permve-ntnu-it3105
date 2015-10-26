@@ -276,5 +276,22 @@ namespace vi
     }
 }
 
+namespace std
+{
+    template <>
+    struct hash<::vi::board>
+    {
+        using argument_type = ::vi::board;
+        using result_type   = std::size_t;
+
+        inline
+        result_type
+        operator()(const argument_type& board) const
+        {
+            return board.board_state;
+        }
+    };
+}
+
 #endif // VI_2048_BOARD_H
 

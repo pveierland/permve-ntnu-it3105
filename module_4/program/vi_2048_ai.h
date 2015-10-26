@@ -24,7 +24,7 @@ namespace vi
 			board::heuristic score;
 		};
 
-		std::unordered_map<board::state, transposition_table_entry> transposition_table{};
+		std::unordered_map<board, transposition_table_entry> transposition_table{};
 
         unsigned depth_limit = 0;
         unsigned max_depth = 0;

@@ -67,7 +67,7 @@ namespace vi
 			return board.get_heuristic();
 		}
 
-		auto entry = transposition_table.find(board.board_state);
+		auto entry = transposition_table.find(board);
 
 		if (entry != transposition_table.end() && entry->second.depth <= depth)
 		{
@@ -101,7 +101,7 @@ namespace vi
 
 		score /= available;
 
-		transposition_table[board_state] = transposition_table_entry{ depth, score };
+		transposition_table[board] = transposition_table_entry{ depth, score };
 
 		return score;
 	}
