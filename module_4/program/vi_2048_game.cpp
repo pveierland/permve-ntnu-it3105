@@ -2,6 +2,7 @@
 #include "vi_2048_board.h"
 #include "vi_2048_game.h"
 
+#include <chrono>
 #include <iostream>
 #include <random>
 
@@ -10,9 +11,12 @@ namespace vi
     std::default_random_engine rng{std::random_device{}()};
     auto tile_distribution = std::uniform_int_distribution<vi::board::state>{1, 10};
     auto move_count = 0;
-    vi::ai ai{};
+    std::chrono::time_point<std::chrono::steady_clock> start_time{};
 
+    vi::ai ai{};
     vi::board current_board{};
+
+    const char* move_strings[] = { "UP", "DOWN", "LEFT", "RIGHT" };
 
     static inline
     vi::board
@@ -61,7 +65,7 @@ namespace vi
     {
         return tile_distribution(rng) == 10 ? 2 : 1;
     }
-    
+
     void
     configure(const unsigned depth_limit, const float probability_limit)
     {
@@ -74,14 +78,25 @@ namespace vi
     {
         current_board = insert_tile(
             vi::board{}, random_tile(), std::uniform_int_distribution<unsigned>{0, 15}(rng));
+        start_time = std::chrono::time_point<std::chrono::steady_clock>{};
     }
 
     unsigned long
     step_game()
     {
+        const auto now = std::chrono::steady_clock::now();
+
+        if (start_time.time_since_epoch().count() == 0)
+        {
+            start_time = now;
+        }
+
+        const std::chrono::duration<double> seconds{now - start_time};
+
         if (is_game_over())
         {
-            printf("Game over! Highest tile: %u Final score: %.0f\n",
+            printf("Time: %4.2f -- Game over! Highest tile: %u Final score: %.0f\n",
+                   seconds.count(),
                    current_board.get_highest_value(),
                    current_board.get_score());
             return 0;
@@ -89,18 +104,19 @@ namespace vi
 
         auto move = ai.find_move(current_board);
 
-        printf("Current: %.2f Actual: %.0f Moves: %d Moves evaluated: %d Move %d. Cache %d hits / %d misses (%.2f%%). Pruned %d hits / %d misses (%.2f%%)\n",
-            current_board.get_heuristic(),
-            current_board.get_score(),
-            move_count,
-            ai.moves_evaluated,
-            static_cast<int>(move),
-            ai.cache_hits,
-            ai.cache_misses,
-            100.0 * ai.cache_hits / (ai.cache_hits + ai.cache_misses),
-            ai.probability_prune_hits,
-            ai.probability_prune_misses,
-            100.0 * ai.probability_prune_hits / (ai.probability_prune_hits + ai.probability_prune_misses));
+        printf("Time: %.2f -- Heuristic: %.2f Score: %.0f Moves: %d Evaluated: %d Move: %5s Cache: %d hits / %d misses (%.2f%%) Prune: %d hits / %d misses (%.2f%%)\n",
+               seconds.count(),
+               current_board.get_heuristic(),
+               current_board.get_score(),
+               move_count,
+               ai.moves_evaluated,
+               move_strings[static_cast<int>(move)],
+               ai.cache_hits,
+               ai.cache_misses,
+               100.0 * ai.cache_hits / (ai.cache_hits + ai.cache_misses),
+               ai.probability_prune_hits,
+               ai.probability_prune_misses,
+               100.0 * ai.probability_prune_hits / (ai.probability_prune_hits + ai.probability_prune_misses));
 
         ai.moves_evaluated = 0;
         ai.cache_hits = 0;
