@@ -7,7 +7,7 @@ import vi_2048_python
 import visuals
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--depth_limit', type=int, default=4)
+parser.add_argument('--depth_limit', type=int, default=5)
 parser.add_argument('--probability_limit', type=float, default=0.0001)
 parser.add_argument('--nogui', action='store_true')
 args = parser.parse_args()
