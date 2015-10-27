@@ -52,6 +52,8 @@ Another benefit from the compact state representation is that it allows for effi
 
 Lookup tables can also be used to evaluate both board heuristics and board scores. The board heuristic may be a costly function to evaluate, making it very beneficial to pre-compute. However, unlike the state transitions which can be considered as functions considering each row and column individually, the heuristic function evaluates the entire board state. Since a lookup table containing entries for all states would be $2^{64}*8=18.45$~exabytes, this is currently infeasible. However by imposing the limitation that the heuristic function can only consider a single row or column at a time, only a single lookup table with $2^{16}$ entries is needed. This limits the information available to the heuristic function, but the implemented heuristic function is still able to provide sufficient guidance to the search. When evaluating the heuristic value for a state; 8~lookups are performed, one for each row and column, and the result is summed. The advantage of this approach is that the heuristic evaluation can use very costly operations in the pre-computation, since its effective use consists only of lookups.
 
+Evaluating the score of a given state is also done using lookup tables. This is a simple convenience such that the scoring of a state can be performed using four row lookups.
+
 \section*{Expectimax}
 
 The algorithm used to solve \textsc{2048} is \textit{Expectimax} with pruning based on a probability threshold and a transposition table. \textit{Expectimax} was chosen over \textit{Minimax} since the ``adversary'' is stochastic and not actively minimizing the expected outcome. The code centers around the two functions \texttt{score\_player\_node} and \texttt{score\_chance\_node} which calls each other recursively with successive board evaluations, until either the search is pruned due to the node having a probability beneath the probability threshold, or because the depth exceeds the depth threshold, or if the current board state is found in the transposition table.
@@ -64,7 +66,7 @@ When evaluating the game state space, there will be many overlaps where differen
 
 \section*{Heuristic}
 
-The \textit{Expectimax} algorithm requires a heuristic to evaluate the quality of a given state as it is unfeasible to fully evaluate the full state space for a given node due to a high branching ratio and a typical ``win'' state after 1500~plies.
+The \textit{Expectimax} algorithm requires a heuristic to evaluate the quality of a given state as it is unfeasible to fully evaluate the full state space for a given node due to a high branching ratio and a typical ``win'' state after approximately 2000~plies.
 
 The chosen heuristic depends on four metrics and six constants. Since a lookup approach is used with the heuristic, the heuristic function can only evaluate a single row or column in isolation. For a given row the number of direct merges, $M_1$, secondary merges, $M_2$, and ternary merges, $M_3$, are recorded. E.g. for a row ``2 2 4 8'' the number of direct merges possible is one (``2'' with ``2'' resulting in ``4''), and the number of secondary merges is one (the resulting ``4'' with the existing ``4'', resulting in ``8''). The number of ternary merges is one (the resulting ``8'' with the existing ``8''). The last metric tracked is the number of ``bad tiles''; $B$. This is simply all non-zero tiles in a row which are not part of a merge.
 
@@ -76,7 +78,7 @@ The three next constants is used to value the different merges, while the consta
 H(\textit{row}) = k_L + k_1 \cdot M_1 + k_2 \cdot M_2 + k_3 \cdot M_3 - \frac{{k_{B1}}^{B}}{k_{B2}}
 \end{displaymath}
 
-More sophisticated heuristics can be constructed which takes into account the monotonicity of the board state, the values of the tiles involved, and the number of empty tiles. However, the implemented heuristic performs well for shallow depths and is able to achieve a ``2048'' tile on ~80\% of runs with a maximum depth of 4 in under 3 minutes, and consistently when using a maximum search depth of 5. It also regularly accomplishes the ``4096'' tile; but has not been able to score ``8196'', despite a couple of attempts with a maximum depths of 10.
+More sophisticated heuristics can be constructed which takes into account the monotonicity of the board state, the values of the tiles involved, and the number of empty tiles. However, the implemented heuristic performs well for shallow depths and is able to achieve a ``2048'' tile on ~80\% of runs with a maximum depth of 4 in under 3 minutes. It also regularly accomplishes the ``4096'' tile; but has not been able to score ``8196'', despite attempts with a maximum depth of 10.
 
 The following constants have been found by thought, trial and error. Achieving good constants for the heuristic will likely involve a meta-search using e.g. a gradient descent approach to tune the algorithm.
 
