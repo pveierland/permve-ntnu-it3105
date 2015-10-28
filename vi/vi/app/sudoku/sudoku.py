@@ -1,28 +1,36 @@
 #!/usr/bin/python3
 
+import argparse
 import sys
 
 import vi.app.sudoku
 import vi.search.graph
 
 def main():
-    problem = vi.app.sudoku.load_problem(sys.argv[1])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('puzzle_input_filename')
+    parser.add_argument('--pdf', metavar='output_filename')
+    args = parser.parse_args()
+
+    problem = vi.app.sudoku.load_problem(args.puzzle_input_filename)
     search  = vi.search.graph.BestFirst(problem)
 
     if search.search():
-        print(vi.app.sudoku.convert_network_to_puzzle(search.node.state))
+        puzzle = vi.app.sudoku.convert_network_to_puzzle(search.node.state)
 
-    #while True:
-    #    if search.state is vi.search.graph.State.start or \
-    #       search.state is vi.search.graph.State.expand_node_begin:
-    #        print(vi.app.sudoku.convert_network_to_puzzle(search.node.state))
+        print('num_open={0} num_closed={1} cost={2}'.format(
+            len(search.open_list()),
+            len(search.closed_list()),
+            search.info[1].cost))
 
-    #    search.step()
-
-    #    if search.is_complete():
-    #        break
-
-    #    #vi.app.sudoku.render_output('wat.pdf', None)
+        if args.pdf:
+            vi.app.sudoku.render_output(args.pdf, puzzle)
+        else:
+            print(puzzle)
+        return 0
+    else:
+        print("Failed to solve Sudoku.", file=sys.stderr)
+        return -1
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

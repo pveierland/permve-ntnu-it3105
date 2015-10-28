@@ -65,7 +65,8 @@ def convert_network_to_puzzle(network):
 
     for variable in network.variables:
         row, column         = variable.identity
-        puzzle[row, column] = network.domains[variable][0]
+        puzzle[row, column] = network.domains[variable][0] \
+                              if len(network.domains[variable]) == 1 else 0
 
     return puzzle
 
