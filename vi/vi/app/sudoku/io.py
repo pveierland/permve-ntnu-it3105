@@ -4,15 +4,37 @@ import numpy
 from vi.csp import Constraint, Network, Variable
 from vi.search.gac import Problem
 
-def all_unique(values):
-    x = 0
-    for value in values.values():
-        if value:
-            z = (1 << value)
-            if (x & z) != 0:
-                return False
-            x = x | z
-    return True
+def build_binary_constraints():
+    pass
+
+def build_general_constraints(variables):
+    def all_unique(values):
+        x = 0
+        for value in values.values():
+            if value:
+                z = (1 << value)
+                if (x & z) != 0:
+                    return False
+                x = x | z
+        return True
+
+    constraints = []
+
+    for row in range(9):
+        constraints.append(Constraint.constrain(variables[row,:], all_unique))
+
+    for column in range(9):
+        constraints.append(Constraint.constrain(variables[:,column], all_unique))
+
+    for row_group in range(3):
+        for column_group in range(3):
+            group_variables = variables[ \
+                row_group    * 3:(row_group + 1)    * 3,
+                column_group * 3:(column_group + 1) * 3].flatten()
+
+            constraints.append(Constraint.constrain(group_variables, all_unique))
+
+    return constraints
 
 def build_problem(puzzle):
     domains   = {}
@@ -39,26 +61,13 @@ def build_problem(puzzle):
                                          x not in column_values and \
                                          x not in group_values ]
 
-    constraints = []
-
-    for row in range(9):
-        constraints.append(Constraint.constrain(variables[row,:], all_unique))
-
-    for column in range(9):
-        constraints.append(Constraint.constrain(variables[:,column], all_unique))
-
-    for row_group in range(3):
-        for column_group in range(3):
-            group_variables = variables[ \
-                row_group    * 3:(row_group + 1)    * 3,
-                column_group * 3:(column_group + 1) * 3].flatten()
-
-            constraints.append(Constraint.constrain(group_variables, all_unique))
+    constraints = build_general_constraints(variables)
 
     network = Network(list(variables.flatten()), domains, constraints)
-    problem = Problem(network)
+    #problem = Problem(network)
 
-    return problem
+    #return problem
+    return network
 
 def convert_network_to_puzzle(network):
     puzzle = numpy.zeros((9, 9), dtype=int)
