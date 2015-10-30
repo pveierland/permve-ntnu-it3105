@@ -1,35 +1,36 @@
 import vi.csp
 
 import collections
+import operator
 
 BacktrackStatistics = collections.namedtuple(
-    'BacktrackStatistics', ['call_count', 'backtrack_count'])
+    'BacktrackStatistics', ['calls', 'failures'])
 
 def backtrack_search(network):
+    statistics = BacktrackStatistics(calls=0, failures=0)
     # Ensure arc consistency before making any assumptions:
-    statistics = BacktrackStatistics(call_count=0, backtrack_count=0)
     return backtrack(vi.csp.general_arc_consistency(network), statistics)
 
 def backtrack(network, statistics):
     def select_unassigned_variable():
         # Use Minimum-Remaining-Values heuristic:
-        #return min((domain, variable) for variable, domain in network.domains.items())[1]
-        for variable, domain in network.domains.items():
-            if len(domain) != 1:
-                return variable
+        return min(((variable, domain)
+                       for variable, domain in network.domains.items()
+                       if len(domain) > 1),
+                   key=operator.itemgetter(1))[0]
 
     def order_domain_variables():
         return network.domains[variable]
 
-    statistics = BacktrackStatistics(statistics.call_count + 1,
-                                     statistics.backtrack_count)
+    statistics = BacktrackStatistics(statistics.calls + 1,
+                                     statistics.failures)
 
     if all(len(domain) == 1 for domain in network.domains.values()):
         return network, statistics
 
     variable = select_unassigned_variable()
 
-    for value in order_domain_variables():#variable, assignment, network):
+    for value in order_domain_variables():
         successor = network.copy()
         successor.domains[variable] = [value]
         successor = vi.csp.general_arc_consistency_rerun(successor, variable)
@@ -37,12 +38,12 @@ def backtrack(network, statistics):
         if all(len(domain) >= 1
                for domain in successor.domains.values()):
 
-            result = backtrack(successor)
+            result, statistics = backtrack(successor, statistics)
 
             if result:
                 return result, statistics
 
-    statistics.backtrack_count = BacktrackStatistics(statistics.call_count,
-                                                     statistics.backtrack_count + 1)
+    statistics = BacktrackStatistics(statistics.calls,
+                                     statistics.failures + 1)
 
     return None, statistics

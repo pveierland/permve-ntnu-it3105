@@ -2,10 +2,36 @@ import itertools
 import numpy
 
 from vi.csp import Constraint, Network, Variable
-from vi.search.gac import Problem
 
-def build_binary_constraints():
-    pass
+def build_binary_constraints(variables):
+    def build_binary_constraint_combinations(variables, condition):
+        return [ Constraint.constrain(variable_pair, condition)
+                for variable_pair in itertools.combinations(variables, 2) ]
+
+    def is_different(values):
+        a, b = values.values()
+        return a != b
+
+    constraints = []
+
+    for row in range(9):
+        constraints.extend(build_binary_constraint_combinations(
+            variables[row,:], is_different))
+
+    for column in range(9):
+        constraints.extend(build_binary_constraint_combinations(
+            variables[:,column], is_different))
+
+    for row_group in range(3):
+        for column_group in range(3):
+            group_variables = variables[ \
+                row_group    * 3:(row_group + 1)    * 3,
+                column_group * 3:(column_group + 1) * 3].flatten()
+
+            constraints.extend(build_binary_constraint_combinations(
+                group_variables, is_different))
+
+    return constraints
 
 def build_general_constraints(variables):
     def all_unique(values):
@@ -36,7 +62,7 @@ def build_general_constraints(variables):
 
     return constraints
 
-def build_problem(puzzle):
+def build_network(puzzle, use_general_constraints):
     domains   = {}
     variables = numpy.empty((9, 9), dtype=object)
 
@@ -61,13 +87,11 @@ def build_problem(puzzle):
                                          x not in column_values and \
                                          x not in group_values ]
 
-    constraints = build_general_constraints(variables)
+    constraints = build_general_constraints(variables) \
+                  if use_general_constraints \
+                  else build_binary_constraints(variables)
 
-    network = Network(list(variables.flatten()), domains, constraints)
-    #problem = Problem(network)
-
-    #return problem
-    return network
+    return Network(list(variables.flatten()), domains, constraints)
 
 def convert_network_to_puzzle(network):
     puzzle = numpy.zeros((9, 9), dtype=int)
@@ -79,8 +103,8 @@ def convert_network_to_puzzle(network):
 
     return puzzle
 
-def load_problem(filename):
-    return build_problem(load_puzzle(filename))
+def load_network(filename, use_general_constraints):
+    return build_network(load_puzzle(filename), use_general_constraints)
 
 def load_puzzle(filename):
     puzzle = numpy.zeros((9, 9), dtype=int)

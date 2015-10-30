@@ -4,6 +4,7 @@ class Constraint(object):
         constraint = Constraint(variables, condition)
         for variable in variables:
             variable.constraints.add(constraint)
+        return constraint
 
     def __init__(self, variables, condition):
         self.variables = variables
