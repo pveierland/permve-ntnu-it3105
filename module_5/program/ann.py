@@ -4,6 +4,7 @@ import numpy
 import theano
 import theano.tensor as T
 import sys
+import time
 
 sys.path.append('../input/basics')
 import mnist_basics
@@ -72,6 +73,8 @@ errors = []
 
 import matplotlib.pyplot as plt
 
+start_time = time.time()
+
 for epochs in range(100):
     for training_case_id, training_input in enumerate(training_inputs):
     #    print("TRAINING INPUT = {0}".format(training_input))
@@ -81,10 +84,12 @@ for epochs in range(100):
         e = trainer(training_input, desired_wtf)
         errors.append(e)
 
-        print("{0}/{1}: {2} {3}".format(training_case_id, len(training_inputs), desired_wtf, e))
+        #print("{0}/{1}: {2} {3}".format(training_case_id, len(training_inputs), desired_wtf, e))
+    now = time.time()
+    print("{0:.2f}: Completed epoch {1} e = {2}".format((now - start_time), epochs + 1, e))
 
-    if not epochs % 10:
-        plt.plot(range(1, len(errors) + 1), errors)
-        plt.show()
+    #if not epochs % 10:
+    #    plt.plot(range(1, len(errors) + 1), errors)
+    #    plt.show()
 
 
