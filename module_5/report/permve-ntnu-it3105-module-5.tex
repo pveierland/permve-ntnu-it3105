@@ -1,0 +1,55 @@
+\input{../../../permve-ntnu-latex/assignment.tex}
+
+\usepackage{float}
+
+\title{	
+\normalfont \normalsize 
+\textsc{Norwegian University of Science and Technology\\IT3105 -- Artificial Intelligence Programming}
+\horrule{0.5pt} \\[0.4cm]
+\huge Module 5:\\ Neural Networks for Image Classification\\
+\horrule{2pt} \\[0.5cm]
+}
+
+\author{Per Magnus Veierland\\permve@stud.ntnu.no}
+
+\date{\normalsize\today}
+
+\begin{document}
+
+\fancyfoot[C]{}
+\maketitle
+
+\newpage
+
+\resizebox {8cm} {!} {
+\begin{tikzpicture}
+\begin{axis}[xlabel={Epochs},ylabel={Loss value}, ymode=log]
+\addplot table[x index=0,y index=2,col sep=space] {../data/loss.txt};
+%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_2_2_100.txt};
+%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_4_2_100.txt};
+%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_8_2_100.txt};
+\addlegendentry{P=1}
+%\addlegendentry{P=2}
+%\addlegendentry{P=4}
+%\addlegendentry{P=8}
+\end{axis}
+\end{tikzpicture}
+}
+
+\resizebox {8cm} {!} {
+\begin{tikzpicture}
+\begin{axis}[xlabel={Epochs},ylabel={Error [\%]}]
+\addplot table[x index=0,y index=2,col sep=space] {../data/error.txt};
+%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_2_2_100.txt};
+%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_4_2_100.txt};
+%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_8_2_100.txt};
+\addlegendentry{P=1}
+%\addlegendentry{P=2}
+%\addlegendentry{P=4}
+%\addlegendentry{P=8}
+\end{axis}
+\end{tikzpicture}
+}
+
+\end{document}
+
