@@ -3,6 +3,7 @@ import vi.theano
 import functools
 import itertools
 import operator
+import random
 import theano
 import theano.tensor as T
 
@@ -15,6 +16,7 @@ class Network(object):
                  L1_regularization_factor=None,
                  L2_regularization_factor=None):
 
+        self.inputs                   = inputs
         self.layer_sizes              = layer_sizes
         self.dropout_factor           = dropout_factor
         self.L1_regularization_factor = L1_regularization_factor
@@ -22,22 +24,25 @@ class Network(object):
 
         self.layers = []
 
-        srng = T.shared_randomstreams.RandomStreams(seed=234)
+        srng = T.shared_randomstreams.RandomStreams(seed=random.randint(0, 2 ** 30))
 
         training_inputs = testing_inputs = inputs
 
-        for layer_index, (previous_layer_size, layer_size) in enumerate(zip(layer_sizes, layer_sizes[1:])):
-            is_output_layer = layer_index == len(layer_sizes) - 2
+        for layer_index in range(1, len(layer_sizes)):
+            is_output_layer = layer_index == len(layer_sizes) - 1
 
             activation_function = T.nnet.softmax if is_output_layer \
                                   else hidden_activation_function
 
-            if self.dropout_factor:
-                # Inverted dropout. Does not require scaling at testing time.
-                mask   = (srng.uniform(size=inputs.shape) < self.dropout_factor) / self.dropout_factor
-                inputs = inputs * mask
+            layer = vi.theano.Layer(
+                srng,
+                training_inputs,
+                testing_inputs,
+                layer_sizes,
+                layer_index,
+                activation_function,
+                dropout_factor)
 
-            layer = vi.theano.Layer(srng, training_inputs, testing_inputs, previous_layer_size, layer_size, activation_function, dropout_factor)
             self.layers.append(layer)
 
             training_inputs = layer.training_outputs
