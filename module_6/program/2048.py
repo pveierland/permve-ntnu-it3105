@@ -11,13 +11,13 @@ import struct
 import random
 import sys
 import pickle
-#import theano
-#import theano.tensor as T
+import theano
+import theano.tensor as T
 
-#from sklearn.utils import shuffle
+from sklearn.utils import shuffle
 
 sys.path.append('../../vi')
-#import vi.theano
+import vi.theano
 
 # Directions, DO NOT MODIFY
 UP    = 0
@@ -245,7 +245,8 @@ def generate_training_data():
     return game.get_highest_tile(), xdata, ydata
 
 def heuristic(game):
-    return 10 * game.count_merges() + game.count_free()
+#    return 10 * game.count_merges() + game.count_free()
+    return game.count_merges()
 
 def expectomax_player_node(game, depth):
     best_move  = 0
@@ -316,8 +317,7 @@ def play_random_game():
     return game.get_highest_tile()
 
 def transform_state(game, delta=False):
-    return [ game.count_free(),
-             game.count_horizontal_merges(),
+    return [ game.count_horizontal_merges(),
              game.count_vertical_merges() ]
 
 #    def get_successor_values(move):
