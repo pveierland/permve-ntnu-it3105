@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from visuals import GameWindow
+#from visuals import GameWindow
 
 import argparse
 import ai2048demo
@@ -66,6 +66,27 @@ def merge(line):
 # https://github.com/jbutewicz/An-Introduction-to-Interactive-Programming-in-Python/blob/master/Principles%20of%20Computing%20Week%201/2048.py
 # Modified for convenience.
 class TwentyFortyEight:
+    @staticmethod
+    def count_line_merges(line):
+        merges  = 0
+        prev    = 0
+        counter = 0
+
+        for i in range(4):
+            rank = line[i]
+            if rank:
+                if prev == rank:
+                    counter += 1
+                elif counter > 0:
+                    merges += 1 + counter
+                    counter = 0
+                prev = rank
+
+        if counter > 0:
+            merges += 1 + counter
+
+        return merges
+
     # Class to run the game logic.
     # Compute inital row dictionary to make move code cleaner
     initial = {
@@ -75,52 +96,46 @@ class TwentyFortyEight:
         RIGHT : [[element, 4 - 1] for element in range (4)]
     }
 
-    def __init__(self):
-        self.reset()
+    def __init__(self, state=None):
+        if state:
+            self.cells = state
+        else:
+            self.reset()
 
     def __str__(self):
         # Print a string representation of the grid for debugging.
         for number in range(0, 4):
             print(self.cells[number])
-
+    
     def can_move(self, direction):
         temp = copy.deepcopy(self.cells)
         result = self.move(direction, with_spawn=False)
         self.cells = temp
         return result
 
+    def copy_and_set_tile(self, row, col, value):
+        new = TwentyFortyEight(self.cells)
+        new.set_tile(row, col, value)
+        return new
+
     def count_free(self):
         return sum(cell == 0 for row in self.cells for cell in row)
-
+    
     def count_merges(self):
-        def count_line_merges(line):
-            merges  = 0
-            prev    = 0
-            counter = 0
+        return self.count_horizontal_merges() + \
+               self.count_vertical_merges()
 
-            for i in range(4):
-                rank = line[i]
-                if rank:
-                    if prev == rank:
-                        counter += 1
-                    elif counter > 0:
-                        merges += 1 + counter
-                        counter = 0
-                    prev = rank
+    def count_horizontal_merges(self):
+        return (self.count_line_merges(self.cells[0]) +
+                self.count_line_merges(self.cells[1]) +
+                self.count_line_merges(self.cells[2]) +
+                self.count_line_merges(self.cells[3]))
 
-            if counter > 0:
-                merges += 1 + counter
-
-            return merges
-
-        return (count_line_merges(self.cells[0]) +
-                count_line_merges(self.cells[1]) +
-                count_line_merges(self.cells[2]) +
-                count_line_merges(self.cells[3]) +
-                count_line_merges([self.cells[0][0], self.cells[1][0], self.cells[2][0], self.cells[3][0]]) +
-                count_line_merges([self.cells[0][1], self.cells[1][1], self.cells[2][1], self.cells[3][1]]) +
-                count_line_merges([self.cells[0][2], self.cells[1][2], self.cells[2][2], self.cells[3][2]]) +
-                count_line_merges([self.cells[0][3], self.cells[1][3], self.cells[2][3], self.cells[3][3]]))
+    def count_vertical_merges(self):
+        return (self.count_line_merges([self.cells[0][0], self.cells[1][0], self.cells[2][0], self.cells[3][0]]) +
+               self.count_line_merges([self.cells[0][1], self.cells[1][1], self.cells[2][1], self.cells[3][1]]) +
+               self.count_line_merges([self.cells[0][2], self.cells[1][2], self.cells[2][2], self.cells[3][2]]) +
+               self.count_line_merges([self.cells[0][3], self.cells[1][3], self.cells[2][3], self.cells[3][3]]))
 
     def get_highest_tile(self):
         return max(cell for row in self.cells for cell in row)
@@ -220,7 +235,7 @@ def generate_training_data():
 
     while not game.is_game_over():
         x = transform_state(game)
-        y = greedy_move_selector(game)
+        y = max((score_move(game, move), move) for move in range(4))[1]
 
         xdata.append(x)
         ydata.append(y)
@@ -229,27 +244,59 @@ def generate_training_data():
 
     return game.get_highest_tile(), xdata, ydata
 
-def greedy_move_selector(game):
-    def score_move(move):
-        free_before    = game.count_free()
-        merges_before  = game.count_merges()
-        actual_move    = game.move(move, with_spawn=False)
-        free_after     = game.count_free()
-        merges_after   = game.count_merges()
+def heuristic(game):
+#    return 10 * game.count_merges() + game.count_free()
+    return 100000 + game.count_merges()
+
+def expectomax_player_node(game, depth):
+    if depth >= 2:
+        return -1, heuristic(game)
+
+    best_move  = 0
+    best_score = 0
+
+    for move in range(4):
+        if game.move(move, with_spawn=False):
+            score = expectomax_chance_node(game, depth + 1)
+
+            if score > best_score:
+                best_move  = move
+                best_score = score
+            
+            game.undo_move()
+
+    return best_move, best_score
+
+def expectomax_chance_node(game, depth):
+    score     = 0
+    available = game.count_free()
+
+    for row in range(4):
+        for column in range(4):
+            if game.get_tile(row, column) == 0:
+                score += 0.9 * expectomax_player_node(
+                    game.copy_and_set_tile(row, column, 2), depth)[1]
+                score += 0.1 * expectomax_player_node(
+                    game.copy_and_set_tile(row, column, 4), depth)[1]
+
+    return score / available
+
+def score_move(game, move):
+    if game.move(move, with_spawn=False):
+        #score = game.count_merges() #game.count_merges()
+        #score = 10 * game.count_merges() + game.count_free()
+        score = game.count_free()
         game.undo_move()
-
-        return (10 * (free_after - free_before) + (merges_after - merges_before)) if actual_move else -1000
-
-    best_move_score, best_move = max((score_move(move), move) for move in [UP, DOWN, LEFT, RIGHT])
-
-    return best_move
+        return score
+    else:
+        return -1
 
 def play_ai_game():
     game = TwentyFortyEight()
     game.new_tile()
 
     while not game.is_game_over():
-        game.move(greedy_move_selector(game))
+        game.move(max((score_move(game, move), move) for move in range(4))[1])
 
     return game.get_highest_tile()
 
@@ -263,39 +310,45 @@ def play_random_game():
     return game.get_highest_tile()
 
 def transform_state(game, delta=False):
-    def get_successor_values(move):
-        game.move(move, with_spawn=False)
-        free   = game.count_free()
-        merges = game.count_merges()
-        game.undo_move()
-        return free, merges
+    return [ #game.count_free(),
+             game.count_horizontal_merges(),
+             game.count_vertical_merges() ]
 
-    current_free   = game.count_free()
-    current_merges = game.count_merges()
-
-    free_up, merges_up       = get_successor_values(UP)
-    free_down, merges_down   = get_successor_values(DOWN)
-    free_left, merges_left   = get_successor_values(LEFT)
-    free_right, merges_right = get_successor_values(RIGHT)
-
-    if delta:
-        return [ free_up - current_free, free_down - current_free, free_left - current_free, free_right - current_free,
-                 merges_up - current_merges, merges_down - current_merges, merges_left - current_merges, merges_right - current_merges ]
-    else:
-        return [ current_free, current_merges, free_up, merges_up, free_down, merges_down, free_left, merges_left, free_right, merges_right ]
+#    def get_successor_values(move):
+#        game.move(move, with_spawn=False)
+#        free   = game.count_free()
+#        merges = game.count_merges()
+#        game.undo_move()
+#        return free, merges
+#
+#    current_free   = game.count_free()
+#    current_merges = game.count_merges()
+#
+#    free_up, merges_up       = get_successor_values(UP)
+#    free_down, merges_down   = get_successor_values(DOWN)
+#    free_left, merges_left   = get_successor_values(LEFT)
+#    free_right, merges_right = get_successor_values(RIGHT)
+#
+#    if delta:
+#        return [ free_up - current_free, free_down - current_free, free_left - current_free, free_right - current_free,
+#                 merges_up - current_merges, merges_down - current_merges, merges_left - current_merges, merges_right - current_merges ]
+#    else:
+#        return [ current_free, current_merges, free_up, merges_up, free_down, merges_down, free_left, merges_left, free_right, merges_right ]
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--L1', type=float)
     parser.add_argument('--L2', type=float)
+    parser.add_argument('--ai', action='store_true')
     parser.add_argument('--data', default='training_data.pkl')
+    parser.add_argument('--delta', action='store_true')
+    parser.add_argument('--demo', action='store_true')
     parser.add_argument('--dropout', type=float)
     parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--generate', type=int)
     parser.add_argument('--hidden_function', default='relu')
     parser.add_argument('--hidden_layers', nargs='*')
-    parser.add_argument('--learning_rate', type=float, default=0.005)
-    parser.add_argument('--generate', type=int)
-    parser.add_argument('--demo', action='store_true')
+    parser.add_argument('--learning_rate', type=float, default=0.08)
     parser.add_argument('--max_time', type=int)
     parser.add_argument('--minibatch_size', type=int, default=40)
     parser.add_argument('--model', default='model.pkl')
@@ -307,7 +360,14 @@ def main():
 
     print(args)
 
-    if args.generate:
+    if args.ai:
+        Lr = list(play_random_game() for _ in range(50))
+        La = list(play_ai_game() for _ in range(50))
+
+        print('random play: {}'.format(Lr))
+        print('ann play: {}'.format(La))
+        print(ai2048demo.welch(Lr, La))
+    elif args.generate:
         training_data   = []
         training_labels = []
 
@@ -338,13 +398,13 @@ def main():
             game.new_tile()
 
             while not game.is_game_over():
-                input = numpy.asarray(transform_input(game.cells))
+                input = numpy.asarray(transform_state(game, args.delta))
                 move_probabilities = predict_function(input.reshape(1, input.shape[0]))[0]
                 move_probabilities_sorted = sorted(((probability, move) for (move, probability) in enumerate(move_probabilities)), reverse=True)
 
                 # Select the first valid move ranked by probability:
                 for probability, move in move_probabilities_sorted:
-                    if game.move(move + 1):
+                    if game.move(move):
                         break
 
             t = game.get_highest_tile()
@@ -356,112 +416,93 @@ def main():
         print('random play: {}'.format(Lr))
         print('ann play: {}'.format(La))
         print(ai2048demo.welch(Lr, La))
+    else:
+        def epoch_status_function(time, epoch, average_loss, testing_error, is_best):
+            if is_best:
+                with open(args.model, 'wb') as model_file:
+                    pickle.dump(network, model_file)
 
-#
-# def do_training():
-#     def epoch_status_function(time, epoch, average_loss, testing_error, is_best):
-#         if is_best:
-#             with open('model.pkl', 'wb') as model_file:
-#                 pickle.dump(network, model_file)
-#
-#         print("Time: {:7.2f} sec, Epoch: {:4d}, Testing error: {:.5f}%".format(
-#             time, epoch, testing_error * 100.0))
-#
-#
-#     x_data, y_data = pickle.load(open('training_data.pkl', 'rb'))
-#     #x_data, y_data = shuffle(x_data, y_data, random_state=0)
-#
-#     y_data = [ y - 1 for y in y_data ]
-#
-#     training_ratio = 0.1
-#
-#     num_training_examples = int(math.ceil(training_ratio * len(x_data)))
-#
-#     minibatch_size = 20
-#     learning_rate = 0.08
-#     epochs = 100
-#
-#     layer_sizes = [len(x_data[0])] + [512] + [4]
-#
-#     print("Creating shared Theano dataset variables...")
-#
-#     training_dataset = vi.theano.TheanoDataSet(
-#         theano.shared(numpy.asarray(x_data[:num_training_examples], dtype=theano.config.floatX), borrow=True),
-#         T.cast(theano.shared(numpy.asarray(y_data[:num_training_examples], dtype=theano.config.floatX), borrow=True), 'int32'),
-#         num_training_examples)
-#
-#     minibatch_index = T.lscalar()
-#     x               = T.matrix('x')
-#     y               = T.ivector('y')
-#
-#     network = vi.theano.Network(
-#         x, layer_sizes, theano.tensor.nnet.relu, None, None, None)
-#         #x, layer_sizes, theano.tensor.nnet.relu, 0.8, None, 0.0001)
-#
-#     training_minibatch_count = math.ceil(training_dataset.size / minibatch_size)
-#
-#     loss_function = network.loss_function(y)
-#     parameters    = network.parameters()
-#
-#     gradients = [
-#         T.grad(loss_function, parameter)
-#         for parameter in parameters
-#     ]
-#
-#     updates = [
-#         (parameter, parameter - learning_rate * gradient)
-#         for parameter, gradient in zip(parameters, gradients)
-#     ]
-#
-#     training_function = theano.function(
-#         inputs  = [minibatch_index],
-#         outputs = network.errors(y),
-#         updates = updates,
-#         givens  = {
-#             x: training_dataset.data  [minibatch_index * minibatch_size : (minibatch_index + 1) * minibatch_size],
-#             y: training_dataset.labels[minibatch_index * minibatch_size : (minibatch_index + 1) * minibatch_size]
-#         }
-#     )
-#
-#     testing_function = theano.function(
-#         inputs  = [minibatch_index],
-#         outputs = network.errors(y),
-#         givens  = {
-#             x: training_dataset.data  [minibatch_index * minibatch_size:(minibatch_index + 1) * minibatch_size],
-#             y: training_dataset.labels[minibatch_index * minibatch_size:(minibatch_index + 1) * minibatch_size]
-#         }
-#     )
-#
-#     print("Starting stochastic gradient descent. learning_rate={} epochs={}".format(
-#         learning_rate, epochs))
-#
-#     training_time, training_epochs, testing_error = \
-#         vi.theano.stochastic_gradient_descent(
-#             training_function,
-#             training_minibatch_count,
-#             testing_function,
-#             training_minibatch_count,
-#             learning_rate=learning_rate,
-#             epochs=epochs,
-#             epoch_status_function=epoch_status_function)
-#
-#     print(("Training completed after {:.2f} seconds. {} epochs at {:.2f} epochs / second. " +
-#            "Testing error: {:.5f}%").format(
-#         training_time,
-#         training_epochs,
-#         training_epochs / training_time,
-#         testing_error * 100.0))
+            print("Time: {:7.2f} sec, Epoch: {:4d}, Testing error: {:.5f}%".format(
+                time, epoch, testing_error * 100.0))
 
+        x_data, y_data = pickle.load(open(args.data, 'rb'))
+        #x_data, y_data = shuffle(x_data, y_data, random_state=0)
 
+        num_training_examples = int(math.ceil(args.training_ratio * len(x_data))) \
+                                if args.training_ratio else len(x_data)
 
+        input_size = len(x_data[0])
 
+        layer_sizes = [input_size] + list(map(int, args.hidden_layers or [])) + [4]
 
+        print("Creating shared Theano dataset variables...")
 
-#32	8
-#64	16
-#128	21
-#256	5
+        training_dataset = vi.theano.TheanoDataSet(
+            theano.shared(numpy.asarray(x_data[:num_training_examples], dtype=theano.config.floatX), borrow=True),
+            T.cast(theano.shared(numpy.asarray(y_data[:num_training_examples], dtype=theano.config.floatX), borrow=True), 'int32'),
+            num_training_examples)
 
+        minibatch_index = T.lscalar()
+        x               = T.matrix('x')
+        y               = T.ivector('y')
+
+        network = vi.theano.Network(
+            x, layer_sizes, theano.tensor.nnet.relu, None, None, None)
+            #x, layer_sizes, theano.tensor.nnet.relu, 0.8, None, 0.0001)
+
+        training_minibatch_count = math.ceil(training_dataset.size / args.minibatch_size)
+
+        loss_function = network.loss_function(y)
+        parameters    = network.parameters()
+
+        gradients = [
+            T.grad(loss_function, parameter)
+            for parameter in parameters
+        ]
+
+        updates = [
+            (parameter, parameter - args.learning_rate * gradient)
+            for parameter, gradient in zip(parameters, gradients)
+        ]
+
+        training_function = theano.function(
+            inputs  = [minibatch_index],
+            outputs = network.errors(y),
+            updates = updates,
+            givens  = {
+                x: training_dataset.data  [minibatch_index * args.minibatch_size : (minibatch_index + 1) * args.minibatch_size],
+                y: training_dataset.labels[minibatch_index * args.minibatch_size : (minibatch_index + 1) * args.minibatch_size]
+            }
+        )
+
+        testing_function = theano.function(
+            inputs  = [minibatch_index],
+            outputs = network.errors(y),
+            givens  = {
+                x: training_dataset.data  [minibatch_index * args.minibatch_size:(minibatch_index + 1) * args.minibatch_size],
+                y: training_dataset.labels[minibatch_index * args.minibatch_size:(minibatch_index + 1) * args.minibatch_size]
+            }
+        )
+
+        print("Starting stochastic gradient descent. learning_rate={} epochs={}".format(
+            args.learning_rate, args.epochs))
+
+        training_time, training_epochs, testing_error = \
+            vi.theano.stochastic_gradient_descent(
+                training_function,
+                training_minibatch_count,
+                testing_function,
+                training_minibatch_count,
+                learning_rate=args.learning_rate,
+                epochs=args.epochs,
+                epoch_status_function=epoch_status_function)
+
+        print(("Training completed after {:.2f} seconds. {} epochs at {:.2f} epochs / second. " +
+               "Testing error: {:.5f}%").format(
+            training_time,
+            training_epochs,
+            training_epochs / training_time,
+            testing_error * 100.0))
 
 #window = GameWindow( )
 #window.update_view(flatstuff(g.cells))
