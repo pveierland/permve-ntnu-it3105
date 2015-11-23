@@ -235,7 +235,9 @@ def generate_training_data():
 
     while not game.is_game_over():
         x = transform_state(game)
-        y = greedy_move_selector(game)
+
+        best_move, best_score = expectomax_player_node(game, 0)
+        y = best_move
 
         xdata.append(x)
         ydata.append(y)
@@ -281,21 +283,6 @@ def expectomax_chance_node(game, depth):
 
     return score / available
 
-def greedy_move_selector(game):
-    def score_move(move):
-        free_before    = game.count_free()
-        merges_before  = game.count_merges()
-        actual_move    = game.move(move, with_spawn=False)
-        free_after     = game.count_free()
-        merges_after   = game.count_merges()
-        game.undo_move()
-
-        return (10 * (free_after - free_before) + (merges_after - merges_before)) if actual_move else -1000
-
-    best_move_score, best_move = max((score_move(move), move) for move in [UP, DOWN, LEFT, RIGHT])
-
-    return best_move
-
 def play_ai_game():
     game = TwentyFortyEight()
     game.new_tile()
@@ -303,7 +290,6 @@ def play_ai_game():
     while not game.is_game_over():
         best_move, best_score = expectomax_player_node(game, 0)
         game.move(best_move)
-        #game.move(greedy_move_selector(game))
 
     return game.get_highest_tile()
 
