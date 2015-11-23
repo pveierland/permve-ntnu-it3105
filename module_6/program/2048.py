@@ -296,7 +296,8 @@ def play_ai_game():
     game.new_tile()
 
     while not game.is_game_over():
-        game.move(max((score_move(game, move), move) for move in range(4))[1])
+        if not game.move(max((score_move(game, move), move) for move in range(4))[1]) and not game.is_game_over():
+            print("WTF")
 
     return game.get_highest_tile()
 
