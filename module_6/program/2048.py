@@ -248,9 +248,12 @@ def generate_training_data():
 
 def heuristic(game):
 #    return 10 * game.count_merges() + game.count_free()
-    return game.count_merges()
+    return 100000 + game.count_merges()
 
 def expectomax_player_node(game, depth):
+    if depth >= 2:
+        return -1, heuristic(game)
+
     best_move  = 0
     best_score = 0
 
@@ -267,9 +270,6 @@ def expectomax_player_node(game, depth):
     return best_move, best_score
 
 def expectomax_chance_node(game, depth):
-    if depth >= 1:
-        return heuristic(game)
-
     score     = 0
     available = game.count_free()
 
@@ -277,19 +277,26 @@ def expectomax_chance_node(game, depth):
         for column in range(4):
             if game.get_tile(row, column) == 0:
                 score += 0.9 * expectomax_player_node(
-                    game.copy_and_set_tile(row, column, 2))[1]
+                    game.copy_and_set_tile(row, column, 2), depth)[1]
                 score += 0.1 * expectomax_player_node(
-                    game.copy_and_set_tile(row, column, 4))[1]
+                    game.copy_and_set_tile(row, column, 4), depth)[1]
 
     return score / available
+
+def score_move(game, move):
+    if game.move(move, with_spawn=False):
+        score = game.count_free() #game.count_merges()
+        game.undo_move()
+        return score
+    else:
+        return -1
 
 def play_ai_game():
     game = TwentyFortyEight()
     game.new_tile()
 
     while not game.is_game_over():
-        best_move, best_score = expectomax_player_node(game, 0)
-        game.move(best_move)
+        game.move(max((score_move(game, move), move) for move in range(4))[1])
 
     return game.get_highest_tile()
 
@@ -357,7 +364,7 @@ def main():
     #print('random play: {}'.format(Lr))
     #print('ann play: {}'.format(La))
     #print(ai2048demo.welch(Lr, La))
-        
+
     if args.generate:
         training_data   = []
         training_labels = []
