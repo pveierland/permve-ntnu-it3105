@@ -283,8 +283,8 @@ def expectomax_chance_node(game, depth):
 
 def score_move(game, move):
     if game.move(move, with_spawn=False):
-        score = game.count_merges() #game.count_merges()
-        #    return 10 * game.count_merges() + game.count_free()
+        #score = game.count_merges() #game.count_merges()
+        score = 10 * game.count_merges() + game.count_free()
         game.undo_move()
         return score
     else:
@@ -309,7 +309,8 @@ def play_random_game():
     return game.get_highest_tile()
 
 def transform_state(game, delta=False):
-    return [ game.count_horizontal_merges(),
+    return [ game.count_free(),
+             game.count_horizontal_merges(),
              game.count_vertical_merges() ]
 
 #    def get_successor_values(move):
