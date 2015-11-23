@@ -283,7 +283,8 @@ def expectomax_chance_node(game, depth):
 
 def score_move(game, move):
     if game.move(move, with_spawn=False):
-        score = game.count_free() #game.count_merges()
+        score = game.count_merges() #game.count_merges()
+        #    return 10 * game.count_merges() + game.count_free()
         game.undo_move()
         return score
     else:
@@ -294,8 +295,7 @@ def play_ai_game():
     game.new_tile()
 
     while not game.is_game_over():
-        if not game.move(max((score_move(game, move), move) for move in range(4))[1]) and not game.is_game_over():
-            print("WTF")
+        game.move(max((score_move(game, move), move) for move in range(4))[1])
 
     return game.get_highest_tile()
 
