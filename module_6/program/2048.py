@@ -339,6 +339,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--L1', type=float)
     parser.add_argument('--L2', type=float)
+    parser.add_argument('--ai', action='store_true')
     parser.add_argument('--data', default='training_data.pkl')
     parser.add_argument('--delta', action='store_true')
     parser.add_argument('--demo', action='store_true')
@@ -359,16 +360,14 @@ def main():
 
     print(args)
 
-    Lr = list(play_random_game() for _ in range(50))
-    La = list(play_ai_game() for _ in range(50))
+    if args.ai:
+        Lr = list(play_random_game() for _ in range(50))
+        La = list(play_ai_game() for _ in range(50))
 
-    print('random play: {}'.format(Lr))
-    print('ann play: {}'.format(La))
-    print(ai2048demo.welch(Lr, La))
-
-    return
-
-    if args.generate:
+        print('random play: {}'.format(Lr))
+        print('ann play: {}'.format(La))
+        print(ai2048demo.welch(Lr, La))
+    elif args.generate:
         training_data   = []
         training_labels = []
 
