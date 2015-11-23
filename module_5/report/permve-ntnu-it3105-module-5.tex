@@ -14,6 +14,20 @@
 
 \date{\normalsize\today}
 
+%\pgfplotscreateplotcyclelist{mycolorlist}{%
+%blue,every mark/.append style={fill=blue!80!black},mark=*\\%
+%red,every mark/.append style={fill=red!80!black},mark=square*\\%
+%brown!60!black,every mark/.append style={fill=brown!80!black},mark=otimes*\\%
+%black,mark=star\\%
+%blue,every mark/.append style={fill=blue!80!black},mark=diamond*\\%
+%red,densely dashed,every mark/.append style={solid,fill=red!80!black},mark=*\\%
+%brown!60!black,densely dashed,every mark/.append style={
+%solid,fill=brown!80!black},mark=square*\\%
+%black,densely dashed,every mark/.append style={solid,fill=gray},mark=otimes*\\%
+%blue,densely dashed,mark=star,every mark/.append style=solid\\%
+%red,densely dashed,every mark/.append style={solid,fill=red!80!black},mark=diamond*\\%
+%}
+
 \begin{document}
 
 \fancyfoot[C]{}
@@ -21,32 +35,83 @@
 
 \newpage
 
+
 \resizebox {8cm} {!} {
 \begin{tikzpicture}
-\begin{axis}[xlabel={Epochs},ylabel={Loss value}, ymode=log]
-\addplot table[x index=0,y index=2,col sep=space] {../data/loss.txt};
-%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_2_2_100.txt};
-%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_4_2_100.txt};
-%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_8_2_100.txt};
-\addlegendentry{P=1}
-%\addlegendentry{P=2}
-%\addlegendentry{P=4}
-%\addlegendentry{P=8}
+\begin{axis}[xlabel={Epochs},ylabel={Error [\%]}, cycle list name=color list, mark=none, xmin=25]
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.00005_L2/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.0005_L2/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.001_L2/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.8_dropout/loss.txt};
+\addlegendentry{plain}
+\addlegendentry{0.00005 L2}
+\addlegendentry{0.0001 L2}
+\addlegendentry{0.0005 L2}
+\addlegendentry{0.001 L2}
+\addlegendentry{dropout}
 \end{axis}
 \end{tikzpicture}
 }
 
 \resizebox {8cm} {!} {
 \begin{tikzpicture}
-\begin{axis}[xlabel={Epochs},ylabel={Error [\%]}]
-\addplot table[x index=0,y index=2,col sep=space] {../data/error.txt};
-%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_2_2_100.txt};
-%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_4_2_100.txt};
-%\addplot table[x index=0,y index=1,col sep=space] {../data/run_time_8_2_100.txt};
-\addlegendentry{P=1}
-%\addlegendentry{P=2}
-%\addlegendentry{P=4}
-%\addlegendentry{P=8}
+\begin{axis}[xlabel={Epochs},ylabel={Error [\%]}, cycle list name=color list, mark=none, xmin=25]
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.00005_L2/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.0005_L2/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.001_L2/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.8_dropout/error.txt};
+\addlegendentry{plain}
+\addlegendentry{0.00005 L2}
+\addlegendentry{0.0001 L2}
+\addlegendentry{0.0005 L2}
+\addlegendentry{0.001 L2}
+\addlegendentry{dropout}
+\end{axis}
+\end{tikzpicture}
+}
+
+\resizebox {8cm} {!} {
+\begin{tikzpicture}
+\begin{axis}[xlabel={Epochs},ylabel={Error [\%]}, cycle list name=color list, mark=none, xmin=25]
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.6_dropout/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.7_dropout/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.8_dropout/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.6_dropout/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.7_dropout/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.8_dropout/loss.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_200_minibatches_0.0001_L2_0.5_dropout/loss.txt};
+\addlegendentry{10 0.6}
+\addlegendentry{10 0.7}
+\addlegendentry{10 0.8}
+\addlegendentry{20 0.6}
+\addlegendentry{20 0.7}
+\addlegendentry{20 0.8}
+\addlegendentry{200 0.5}
+\end{axis}
+\end{tikzpicture}
+}
+
+\resizebox {8cm} {!} {
+\begin{tikzpicture}
+\begin{axis}[xlabel={Epochs},ylabel={Error [\%]}, cycle list name=color list, mark=none, xmin=25]
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.6_dropout/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.7_dropout/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.8_dropout/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.6_dropout/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.7_dropout/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.8_dropout/error.txt};
+\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_200_minibatches_0.0001_L2_0.5_dropout/error.txt};
+\addlegendentry{10 0.6}
+\addlegendentry{10 0.7}
+\addlegendentry{10 0.8}
+\addlegendentry{20 0.6}
+\addlegendentry{20 0.7}
+\addlegendentry{20 0.8}
+\addlegendentry{200 0.5}
 \end{axis}
 \end{tikzpicture}
 }
