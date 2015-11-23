@@ -235,9 +235,7 @@ def generate_training_data():
 
     while not game.is_game_over():
         x = transform_state(game)
-
-        best_move, best_score = expectomax_player_node(game, 0)
-        y = best_move
+        y = game.move(max((score_move(game, move), move) for move in range(4))[1])
 
         xdata.append(x)
         ydata.append(y)
