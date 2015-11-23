@@ -132,7 +132,7 @@ class TwentyFortyEight:
                 self.count_line_merges(self.cells[3]))
 
     def count_vertical_merges(self):
-        return self.count_line_merges([self.cells[0][0], self.cells[1][0], self.cells[2][0], self.cells[3][0]]) +
+        return (self.count_line_merges([self.cells[0][0], self.cells[1][0], self.cells[2][0], self.cells[3][0]]) +
                self.count_line_merges([self.cells[0][1], self.cells[1][1], self.cells[2][1], self.cells[3][1]]) +
                self.count_line_merges([self.cells[0][2], self.cells[1][2], self.cells[2][2], self.cells[3][2]]) +
                self.count_line_merges([self.cells[0][3], self.cells[1][3], self.cells[2][3], self.cells[3][3]]))
