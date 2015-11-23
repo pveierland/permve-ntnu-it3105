@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from visuals import GameWindow
+#from visuals import GameWindow
 
 import argparse
 import ai2048demo
@@ -11,13 +11,13 @@ import struct
 import random
 import sys
 import pickle
-import theano
-import theano.tensor as T
+#import theano
+#import theano.tensor as T
 
-from sklearn.utils import shuffle
+#from sklearn.utils import shuffle
 
 sys.path.append('../../vi')
-import vi.theano
+#import vi.theano
 
 # Directions, DO NOT MODIFY
 UP    = 0
@@ -66,6 +66,27 @@ def merge(line):
 # https://github.com/jbutewicz/An-Introduction-to-Interactive-Programming-in-Python/blob/master/Principles%20of%20Computing%20Week%201/2048.py
 # Modified for convenience.
 class TwentyFortyEight:
+    @staticmethod
+    def count_line_merges(line):
+        merges  = 0
+        prev    = 0
+        counter = 0
+
+        for i in range(4):
+            rank = line[i]
+            if rank:
+                if prev == rank:
+                    counter += 1
+                elif counter > 0:
+                    merges += 1 + counter
+                    counter = 0
+                prev = rank
+
+        if counter > 0:
+            merges += 1 + counter
+
+        return merges
+
     # Class to run the game logic.
     # Compute inital row dictionary to make move code cleaner
     initial = {
@@ -75,52 +96,46 @@ class TwentyFortyEight:
         RIGHT : [[element, 4 - 1] for element in range (4)]
     }
 
-    def __init__(self):
-        self.reset()
+    def __init__(self, state=None):
+        if state:
+            self.cells = state
+        else:
+            self.reset()
 
     def __str__(self):
         # Print a string representation of the grid for debugging.
         for number in range(0, 4):
             print(self.cells[number])
-
+    
     def can_move(self, direction):
         temp = copy.deepcopy(self.cells)
         result = self.move(direction, with_spawn=False)
         self.cells = temp
         return result
 
+    def copy_and_set_tile(self, row, col, value):
+        new = TwentyFortyEight(self.cells)
+        new.set_tile(row, col, value)
+        return new
+
     def count_free(self):
         return sum(cell == 0 for row in self.cells for cell in row)
-
+    
     def count_merges(self):
-        def count_line_merges(line):
-            merges  = 0
-            prev    = 0
-            counter = 0
+        return self.count_horizontal_merges() + \
+               self.count_vertical_merges()
 
-            for i in range(4):
-                rank = line[i]
-                if rank:
-                    if prev == rank:
-                        counter += 1
-                    elif counter > 0:
-                        merges += 1 + counter
-                        counter = 0
-                    prev = rank
+    def count_horizontal_merges(self):
+        return (self.count_line_merges(self.cells[0]) +
+                self.count_line_merges(self.cells[1]) +
+                self.count_line_merges(self.cells[2]) +
+                self.count_line_merges(self.cells[3]))
 
-            if counter > 0:
-                merges += 1 + counter
-
-            return merges
-
-        return (count_line_merges(self.cells[0]) +
-                count_line_merges(self.cells[1]) +
-                count_line_merges(self.cells[2]) +
-                count_line_merges(self.cells[3]) +
-                count_line_merges([self.cells[0][0], self.cells[1][0], self.cells[2][0], self.cells[3][0]]) +
-                count_line_merges([self.cells[0][1], self.cells[1][1], self.cells[2][1], self.cells[3][1]]) +
-                count_line_merges([self.cells[0][2], self.cells[1][2], self.cells[2][2], self.cells[3][2]]) +
-                count_line_merges([self.cells[0][3], self.cells[1][3], self.cells[2][3], self.cells[3][3]]))
+    def count_vertical_merges(self):
+        return self.count_line_merges([self.cells[0][0], self.cells[1][0], self.cells[2][0], self.cells[3][0]]) +
+               self.count_line_merges([self.cells[0][1], self.cells[1][1], self.cells[2][1], self.cells[3][1]]) +
+               self.count_line_merges([self.cells[0][2], self.cells[1][2], self.cells[2][2], self.cells[3][2]]) +
+               self.count_line_merges([self.cells[0][3], self.cells[1][3], self.cells[2][3], self.cells[3][3]]))
 
     def get_highest_tile(self):
         return max(cell for row in self.cells for cell in row)
@@ -229,6 +244,42 @@ def generate_training_data():
 
     return game.get_highest_tile(), xdata, ydata
 
+def heuristic(game):
+    return 10 * game.count_merges() + game.count_free()
+
+def expectomax_player_node(game, depth):
+    best_move  = 0
+    best_score = 0
+
+    for move in range(4):
+        if game.move(move, with_spawn=False):
+            score = expectomax_chance_node(game, depth + 1)
+
+            if score > best_score:
+                best_move  = move
+                best_score = score
+            
+            game.undo_move()
+
+    return best_move, best_score
+
+def expectomax_chance_node(game, depth):
+    if depth >= 1:
+        return heuristic(game)
+
+    score     = 0
+    available = game.count_free()
+
+    for row in range(4):
+        for column in range(4):
+            if game.get_tile(row, column) == 0:
+                score += 0.9 * expectomax_player_node(
+                    game.copy_and_set_tile(row, column, 2))[1]
+                score += 0.1 * expectomax_player_node(
+                    game.copy_and_set_tile(row, column, 4))[1]
+
+    return score / available
+
 def greedy_move_selector(game):
     def score_move(move):
         free_before    = game.count_free()
@@ -249,7 +300,9 @@ def play_ai_game():
     game.new_tile()
 
     while not game.is_game_over():
-        game.move(greedy_move_selector(game))
+        best_move, best_score = expectomax_player_node(game, 0)
+        game.move(best_move)
+        #game.move(greedy_move_selector(game))
 
     return game.get_highest_tile()
 
@@ -263,26 +316,30 @@ def play_random_game():
     return game.get_highest_tile()
 
 def transform_state(game, delta=False):
-    def get_successor_values(move):
-        game.move(move, with_spawn=False)
-        free   = game.count_free()
-        merges = game.count_merges()
-        game.undo_move()
-        return free, merges
+    return [ game.count_free(),
+             game.count_horizontal_merges(),
+             game.count_vertical_merges() ]
 
-    current_free   = game.count_free()
-    current_merges = game.count_merges()
-
-    free_up, merges_up       = get_successor_values(UP)
-    free_down, merges_down   = get_successor_values(DOWN)
-    free_left, merges_left   = get_successor_values(LEFT)
-    free_right, merges_right = get_successor_values(RIGHT)
-
-    if delta:
-        return [ free_up - current_free, free_down - current_free, free_left - current_free, free_right - current_free,
-                 merges_up - current_merges, merges_down - current_merges, merges_left - current_merges, merges_right - current_merges ]
-    else:
-        return [ current_free, current_merges, free_up, merges_up, free_down, merges_down, free_left, merges_left, free_right, merges_right ]
+#    def get_successor_values(move):
+#        game.move(move, with_spawn=False)
+#        free   = game.count_free()
+#        merges = game.count_merges()
+#        game.undo_move()
+#        return free, merges
+#
+#    current_free   = game.count_free()
+#    current_merges = game.count_merges()
+#
+#    free_up, merges_up       = get_successor_values(UP)
+#    free_down, merges_down   = get_successor_values(DOWN)
+#    free_left, merges_left   = get_successor_values(LEFT)
+#    free_right, merges_right = get_successor_values(RIGHT)
+#
+#    if delta:
+#        return [ free_up - current_free, free_down - current_free, free_left - current_free, free_right - current_free,
+#                 merges_up - current_merges, merges_down - current_merges, merges_left - current_merges, merges_right - current_merges ]
+#    else:
+#        return [ current_free, current_merges, free_up, merges_up, free_down, merges_down, free_left, merges_left, free_right, merges_right ]
 
 def main():
     parser = argparse.ArgumentParser()
@@ -308,6 +365,13 @@ def main():
 
     print(args)
 
+    #Lr = list(play_random_game() for _ in range(50))
+    #La = list(play_ai_game() for _ in range(50))
+
+    #print('random play: {}'.format(Lr))
+    #print('ann play: {}'.format(La))
+    #print(ai2048demo.welch(Lr, La))
+        
     if args.generate:
         training_data   = []
         training_labels = []
