@@ -5,19 +5,19 @@
 import argparse
 import ai2048demo
 import copy
-import numpy
+#import numpy
 import math
 import struct
 import random
 import sys
 import pickle
-import theano
-import theano.tensor as T
+#import theano
+#import theano.tensor as T
 
-from sklearn.utils import shuffle
+#from sklearn.utils import shuffle
 
 sys.path.append('../../vi')
-import vi.theano
+#import vi.theano
 
 # Directions, DO NOT MODIFY
 UP    = 0
@@ -235,7 +235,7 @@ def generate_training_data():
 
     while not game.is_game_over():
         x = transform_state(game)
-        y = game.move(max((score_move(game, move), move) for move in range(4))[1])
+        y = max((score_move(game, move), move) for move in range(4))[1]
 
         xdata.append(x)
         ydata.append(y)
@@ -284,7 +284,8 @@ def expectomax_chance_node(game, depth):
 def score_move(game, move):
     if game.move(move, with_spawn=False):
         #score = game.count_merges() #game.count_merges()
-        score = 10 * game.count_merges() + game.count_free()
+        #score = 10 * game.count_merges() + game.count_free()
+        score = game.count_free()
         game.undo_move()
         return score
     else:
@@ -309,7 +310,7 @@ def play_random_game():
     return game.get_highest_tile()
 
 def transform_state(game, delta=False):
-    return [ game.count_free(),
+    return [ #game.count_free(),
              game.count_horizontal_merges(),
              game.count_vertical_merges() ]
 
@@ -358,12 +359,14 @@ def main():
 
     print(args)
 
-    #Lr = list(play_random_game() for _ in range(50))
-    #La = list(play_ai_game() for _ in range(50))
+    Lr = list(play_random_game() for _ in range(50))
+    La = list(play_ai_game() for _ in range(50))
 
-    #print('random play: {}'.format(Lr))
-    #print('ann play: {}'.format(La))
-    #print(ai2048demo.welch(Lr, La))
+    print('random play: {}'.format(Lr))
+    print('ann play: {}'.format(La))
+    print(ai2048demo.welch(Lr, La))
+
+    return
 
     if args.generate:
         training_data   = []
