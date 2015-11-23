@@ -289,13 +289,14 @@ def main():
     parser.add_argument('--L1', type=float)
     parser.add_argument('--L2', type=float)
     parser.add_argument('--data', default='training_data.pkl')
+    parser.add_argument('--delta', action='store_true')
+    parser.add_argument('--demo', action='store_true')
     parser.add_argument('--dropout', type=float)
     parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--generate', type=int)
     parser.add_argument('--hidden_function', default='relu')
     parser.add_argument('--hidden_layers', nargs='*')
-    parser.add_argument('--learning_rate', type=float, default=0.005)
-    parser.add_argument('--generate', type=int)
-    parser.add_argument('--demo', action='store_true')
+    parser.add_argument('--learning_rate', type=float, default=0.08)
     parser.add_argument('--max_time', type=int)
     parser.add_argument('--minibatch_size', type=int, default=40)
     parser.add_argument('--model', default='model.pkl')
@@ -338,13 +339,13 @@ def main():
             game.new_tile()
 
             while not game.is_game_over():
-                input = numpy.asarray(transform_input(game.cells))
+                input = numpy.asarray(transform_state(game, args.delta))
                 move_probabilities = predict_function(input.reshape(1, input.shape[0]))[0]
                 move_probabilities_sorted = sorted(((probability, move) for (move, probability) in enumerate(move_probabilities)), reverse=True)
 
                 # Select the first valid move ranked by probability:
                 for probability, move in move_probabilities_sorted:
-                    if game.move(move + 1):
+                    if game.move(move):
                         break
 
             t = game.get_highest_tile()
@@ -356,112 +357,93 @@ def main():
         print('random play: {}'.format(Lr))
         print('ann play: {}'.format(La))
         print(ai2048demo.welch(Lr, La))
+    else:
+        def epoch_status_function(time, epoch, average_loss, testing_error, is_best):
+            if is_best:
+                with open(args.model, 'wb') as model_file:
+                    pickle.dump(network, model_file)
 
-#
-# def do_training():
-#     def epoch_status_function(time, epoch, average_loss, testing_error, is_best):
-#         if is_best:
-#             with open('model.pkl', 'wb') as model_file:
-#                 pickle.dump(network, model_file)
-#
-#         print("Time: {:7.2f} sec, Epoch: {:4d}, Testing error: {:.5f}%".format(
-#             time, epoch, testing_error * 100.0))
-#
-#
-#     x_data, y_data = pickle.load(open('training_data.pkl', 'rb'))
-#     #x_data, y_data = shuffle(x_data, y_data, random_state=0)
-#
-#     y_data = [ y - 1 for y in y_data ]
-#
-#     training_ratio = 0.1
-#
-#     num_training_examples = int(math.ceil(training_ratio * len(x_data)))
-#
-#     minibatch_size = 20
-#     learning_rate = 0.08
-#     epochs = 100
-#
-#     layer_sizes = [len(x_data[0])] + [512] + [4]
-#
-#     print("Creating shared Theano dataset variables...")
-#
-#     training_dataset = vi.theano.TheanoDataSet(
-#         theano.shared(numpy.asarray(x_data[:num_training_examples], dtype=theano.config.floatX), borrow=True),
-#         T.cast(theano.shared(numpy.asarray(y_data[:num_training_examples], dtype=theano.config.floatX), borrow=True), 'int32'),
-#         num_training_examples)
-#
-#     minibatch_index = T.lscalar()
-#     x               = T.matrix('x')
-#     y               = T.ivector('y')
-#
-#     network = vi.theano.Network(
-#         x, layer_sizes, theano.tensor.nnet.relu, None, None, None)
-#         #x, layer_sizes, theano.tensor.nnet.relu, 0.8, None, 0.0001)
-#
-#     training_minibatch_count = math.ceil(training_dataset.size / minibatch_size)
-#
-#     loss_function = network.loss_function(y)
-#     parameters    = network.parameters()
-#
-#     gradients = [
-#         T.grad(loss_function, parameter)
-#         for parameter in parameters
-#     ]
-#
-#     updates = [
-#         (parameter, parameter - learning_rate * gradient)
-#         for parameter, gradient in zip(parameters, gradients)
-#     ]
-#
-#     training_function = theano.function(
-#         inputs  = [minibatch_index],
-#         outputs = network.errors(y),
-#         updates = updates,
-#         givens  = {
-#             x: training_dataset.data  [minibatch_index * minibatch_size : (minibatch_index + 1) * minibatch_size],
-#             y: training_dataset.labels[minibatch_index * minibatch_size : (minibatch_index + 1) * minibatch_size]
-#         }
-#     )
-#
-#     testing_function = theano.function(
-#         inputs  = [minibatch_index],
-#         outputs = network.errors(y),
-#         givens  = {
-#             x: training_dataset.data  [minibatch_index * minibatch_size:(minibatch_index + 1) * minibatch_size],
-#             y: training_dataset.labels[minibatch_index * minibatch_size:(minibatch_index + 1) * minibatch_size]
-#         }
-#     )
-#
-#     print("Starting stochastic gradient descent. learning_rate={} epochs={}".format(
-#         learning_rate, epochs))
-#
-#     training_time, training_epochs, testing_error = \
-#         vi.theano.stochastic_gradient_descent(
-#             training_function,
-#             training_minibatch_count,
-#             testing_function,
-#             training_minibatch_count,
-#             learning_rate=learning_rate,
-#             epochs=epochs,
-#             epoch_status_function=epoch_status_function)
-#
-#     print(("Training completed after {:.2f} seconds. {} epochs at {:.2f} epochs / second. " +
-#            "Testing error: {:.5f}%").format(
-#         training_time,
-#         training_epochs,
-#         training_epochs / training_time,
-#         testing_error * 100.0))
+            print("Time: {:7.2f} sec, Epoch: {:4d}, Testing error: {:.5f}%".format(
+                time, epoch, testing_error * 100.0))
 
+        x_data, y_data = pickle.load(open(args.data, 'rb'))
+        #x_data, y_data = shuffle(x_data, y_data, random_state=0)
 
+        num_training_examples = int(math.ceil(args.training_ratio * len(x_data))) \
+                                if args.training_ratio else len(x_data)
 
+        input_size = len(x_data[0])
 
+        layer_sizes = [input_size] + list(map(int, args.hidden_layers or [])) + [4]
 
+        print("Creating shared Theano dataset variables...")
 
-#32	8
-#64	16
-#128	21
-#256	5
+        training_dataset = vi.theano.TheanoDataSet(
+            theano.shared(numpy.asarray(x_data[:num_training_examples], dtype=theano.config.floatX), borrow=True),
+            T.cast(theano.shared(numpy.asarray(y_data[:num_training_examples], dtype=theano.config.floatX), borrow=True), 'int32'),
+            num_training_examples)
 
+        minibatch_index = T.lscalar()
+        x               = T.matrix('x')
+        y               = T.ivector('y')
+
+        network = vi.theano.Network(
+            x, layer_sizes, theano.tensor.nnet.relu, None, None, None)
+            #x, layer_sizes, theano.tensor.nnet.relu, 0.8, None, 0.0001)
+
+        training_minibatch_count = math.ceil(training_dataset.size / args.minibatch_size)
+
+        loss_function = network.loss_function(y)
+        parameters    = network.parameters()
+
+        gradients = [
+            T.grad(loss_function, parameter)
+            for parameter in parameters
+        ]
+
+        updates = [
+            (parameter, parameter - args.learning_rate * gradient)
+            for parameter, gradient in zip(parameters, gradients)
+        ]
+
+        training_function = theano.function(
+            inputs  = [minibatch_index],
+            outputs = network.errors(y),
+            updates = updates,
+            givens  = {
+                x: training_dataset.data  [minibatch_index * args.minibatch_size : (minibatch_index + 1) * args.minibatch_size],
+                y: training_dataset.labels[minibatch_index * args.minibatch_size : (minibatch_index + 1) * args.minibatch_size]
+            }
+        )
+
+        testing_function = theano.function(
+            inputs  = [minibatch_index],
+            outputs = network.errors(y),
+            givens  = {
+                x: training_dataset.data  [minibatch_index * args.minibatch_size:(minibatch_index + 1) * args.minibatch_size],
+                y: training_dataset.labels[minibatch_index * args.minibatch_size:(minibatch_index + 1) * args.minibatch_size]
+            }
+        )
+
+        print("Starting stochastic gradient descent. learning_rate={} epochs={}".format(
+            args.learning_rate, args.epochs))
+
+        training_time, training_epochs, testing_error = \
+            vi.theano.stochastic_gradient_descent(
+                training_function,
+                training_minibatch_count,
+                testing_function,
+                training_minibatch_count,
+                learning_rate=args.learning_rate,
+                epochs=args.epochs,
+                epoch_status_function=epoch_status_function)
+
+        print(("Training completed after {:.2f} seconds. {} epochs at {:.2f} epochs / second. " +
+               "Testing error: {:.5f}%").format(
+            training_time,
+            training_epochs,
+            training_epochs / training_time,
+            testing_error * 100.0))
 
 #window = GameWindow( )
 #window.update_view(flatstuff(g.cells))
