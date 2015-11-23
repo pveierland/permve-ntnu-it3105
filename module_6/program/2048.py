@@ -5,19 +5,19 @@
 import argparse
 import ai2048demo
 import copy
-#import numpy
+import numpy
 import math
 import struct
 import random
 import sys
 import pickle
-#import theano
-#import theano.tensor as T
+import theano
+import theano.tensor as T
 
-#from sklearn.utils import shuffle
+from sklearn.utils import shuffle
 
 sys.path.append('../../vi')
-#import vi.theano
+import vi.theano
 
 # Directions, DO NOT MODIFY
 UP    = 0
