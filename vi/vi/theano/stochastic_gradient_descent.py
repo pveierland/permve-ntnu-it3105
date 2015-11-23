@@ -18,6 +18,7 @@ def stochastic_gradient_descent(
 
     epoch      = 0
     start_time = timeit.default_timer()
+    start_time = timeit.default_timer() # Hack workaround to initialize start_time properly
 
     while epoch < epochs:
         now = timeit.default_timer()
