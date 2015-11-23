@@ -18,12 +18,11 @@ def stochastic_gradient_descent(
 
     epoch      = 0
     start_time = timeit.default_timer()
-    start_time = timeit.default_timer() # Hack workaround to initialize start_time properly
 
     while epoch < epochs:
-        now = timeit.default_timer()
+        epoch_time = timeit.default_timer() - start_time
 
-        if max_time and now - start_time >= max_time:
+        if max_time and epoch_time >= max_time:
             break
 
         epoch = epoch + 1
@@ -33,7 +32,7 @@ def stochastic_gradient_descent(
 
         if epoch_status_function:
             is_best = testing_error < best_testing_error
-            epoch_status_function(now, epoch, average_loss, testing_error, is_best)
+            epoch_status_function(epoch_time, epoch, average_loss, testing_error, is_best)
 
     end_time = timeit.default_timer()
 

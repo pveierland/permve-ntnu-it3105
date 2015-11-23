@@ -89,19 +89,19 @@ class Ann(object):
                                     for i in range(minibatch_count)))
 
 def main():
-    def epoch_status_function(time, epoch, average_loss, testing_error, is_best):
+    def epoch_status_function(epoch_time, epoch, average_loss, testing_error, is_best):
         if is_best:
             with open(os.path.join(base_path, 'model.pkl'), 'wb') as model_file:
                 pickle.dump(network, model_file)
 
         with open(os.path.join(base_path, 'loss.txt'), 'at') as error_file:
-            print('{} {:.4f} {:.10f}'.format(epoch, time, average_loss), file=error_file)
+            print('{} {:.4f} {:.10f}'.format(epoch, epoch_time, average_loss), file=error_file)
 
         with open(os.path.join(base_path, 'error.txt'), 'at') as error_file:
-            print('{} {:.4f} {:.10f}'.format(epoch, time, testing_error * 100.0), file=error_file)
+            print('{} {:.4f} {:.10f}'.format(epoch, epoch_time, testing_error * 100.0), file=error_file)
 
         print("Time: {:7.2f} sec, Epoch: {:4d}, Testing error: {:.5f}%".format(
-            time, epoch, testing_error * 100.0))
+            epoch_time, epoch, testing_error * 100.0))
 
     def setup_base_path(runs):
         def format_float(f):
