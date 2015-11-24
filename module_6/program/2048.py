@@ -232,11 +232,12 @@ def generate_training_data(representation):
     ydata = []
 
     while not game.is_game_over():
-        moves_scored = sorted(((score_move(game, representation, move), move) for move in range(4)), reverse=True)
+        num_free     = game.count_free()
+        moves_scored = sorted(((score_move(game, representation, move) - num_free, move) for move in range(4)), reverse=True)
         best_move    = moves_scored[0][1]
 
-        # Only use as training example if move is scored better than all other moves:
-        if not any(moves_scored[i][0] == moves_scored[0][0] for i in range(1, 4)):
+        # Only use as training example if delta is positive and move is scored better than any other move:
+        if moves_scored[0][0] > 0 and any(moves_scored[i][0] != moves_scored[0][0] for i in range(1, 4)):
             x = transform_state(game, representation)
             y = best_move
 
@@ -299,8 +300,8 @@ def transform_state(game, representation):
                  TwentyFortyEight.count_line_merges(game.cells[2]),
                  TwentyFortyEight.count_line_merges(game.cells[3]),
                  TwentyFortyEight.count_line_merges([game.cells[0][0], game.cells[1][0], game.cells[2][0], game.cells[3][0]]),
-                 TwentyFortyEight.count_line_merges([game.cells[0][1], game.cells[1][1], game.cells[2][1], game.cells[3][1]]) +
-                 TwentyFortyEight.count_line_merges([game.cells[0][2], game.cells[1][2], game.cells[2][2], game.cells[3][2]]) +
+                 TwentyFortyEight.count_line_merges([game.cells[0][1], game.cells[1][1], game.cells[2][1], game.cells[3][1]]),
+                 TwentyFortyEight.count_line_merges([game.cells[0][2], game.cells[1][2], game.cells[2][2], game.cells[3][2]]),
                  TwentyFortyEight.count_line_merges([game.cells[0][3], game.cells[1][3], game.cells[2][3], game.cells[3][3]]) ]
     else:
         # Representation B:
@@ -344,8 +345,7 @@ def main():
 
     if args.ai:
         if args.benchmark:
-            #La = list(play_ai_game(args.B) for _ in range(args.benchmark))
-            La = list(play_random_game() for _ in range(args.benchmark))
+            La = list(play_ai_game(args.B) for _ in range(args.benchmark))
             print('mean: {} std: {}'.format(numpy.mean(La), numpy.std(La)))
         else:
             Lr = list(play_random_game() for _ in range(50))
@@ -471,8 +471,7 @@ def main():
         y               = T.ivector('y')
 
         network = vi.theano.Network(
-            x, layer_sizes, theano.tensor.nnet.relu, None, None, None)
-            #x, layer_sizes, theano.tensor.nnet.relu, 0.8, None, 0.0001)
+            x, layer_sizes, theano.tensor.nnet.relu, args.dropout, args.L1, args.L2)
 
         training_minibatch_count = math.ceil(training_dataset.size / args.minibatch_size)
 
@@ -527,20 +526,6 @@ def main():
             training_epochs,
             training_epochs / training_time,
             testing_error * 100.0))
-
-        predict_function = theano.function(
-            inputs=[network.inputs],
-            outputs=network.layers[-1].testing_outputs,
-            allow_input_downcast=True)
-
-        for x, y in zip(x_data, y_data):
-            x = numpy.asarray(x)
-            move_probabilities = predict_function(x.reshape(1, x.shape[0]))[0]
-            move_probabilities_sorted = sorted(((probability, move) for (move, probability) in enumerate(move_probabilities)), reverse=True)
-
-            if move_probabilities_sorted[0][1] != y:
-                print("BAD MOVE! predicted {} should be {}: {}".format(move_probabilities_sorted[0][1], y, x))
-
             
 
 #window = GameWindow( )
