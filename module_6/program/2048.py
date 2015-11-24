@@ -232,62 +232,45 @@ def generate_training_data(representation):
     ydata = []
 
     while not game.is_game_over():
-        x = transform_state(game, representation)
-        y = max((score_move(game, representation, move), move) for move in range(4))[1]
+        moves_scored = sorted(((score_move(game, representation, move), move) for move in range(4)), reverse=True)
 
-        xdata.append(x)
-        ydata.append(y)
+        # Only use as training example if move is scored better than any other move:
+        if any(moves_scored[i][0] != moves_scored[0][0] for i in range(1, 4)):
+            x = transform_state(game, representation)
+            y = moves_scored[0][1]
+
+            xdata.append(x)
+            ydata.append(y)
 
         game.move(y)
 
     return game.get_highest_tile(), xdata, ydata
 
-def heuristic(game):
-#    return 10 * game.count_merges() + game.count_free()
-    return 100000 + game.count_merges()
-
-def expectomax_player_node(game, depth):
-    if depth >= 2:
-        return -1, heuristic(game)
-
-    best_move  = 0
-    best_score = 0
-
-    for move in range(4):
-        if game.move(move, with_spawn=False):
-            score = expectomax_chance_node(game, depth + 1)
-
-            if score > best_score:
-                best_move  = move
-                best_score = score
-
-            game.undo_move()
-
-    return best_move, best_score
-
-def expectomax_chance_node(game, depth):
-    score     = 0
-    available = game.count_free()
-
-    for row in range(4):
-        for column in range(4):
-            if game.get_tile(row, column) == 0:
-                score += 0.9 * expectomax_player_node(
-                    game.copy_and_set_tile(row, column, 2), depth)[1]
-                score += 0.1 * expectomax_player_node(
-                    game.copy_and_set_tile(row, column, 4), depth)[1]
-
-    return score / available
-
 def score_move(game, representation, move):
     if game.move(move, with_spawn=False):
-        #score = game.count_merges() #game.count_merges()
-        #score = 10 * game.count_merges() + game.count_free()
         score = game.count_free()
         game.undo_move()
         return score
     else:
         return -1
+
+def play_ann_game(representation, predict_function):
+    game = TwentyFortyEight()
+    game.new_tile()
+
+    while not game.is_game_over():
+        x = numpy.asarray(transform_state(game, representation))
+        move_probabilities = predict_function(x.reshape(1, x.shape[0]))[0]
+        move_probabilities_sorted = sorted(((probability, move) for (move, probability) in enumerate(move_probabilities)), reverse=True)
+
+        # Select the first valid move ranked by probability:
+        for probability, move in move_probabilities_sorted:
+            if game.move(move):
+                break
+
+    t = game.get_highest_tile()
+    print(t)
+    return t
 
 def play_ai_game(representation):
     game = TwentyFortyEight()
@@ -309,6 +292,7 @@ def play_random_game():
 
 def transform_state(game, representation):
     if not representation:
+        # Representation A:
         return [ TwentyFortyEight.count_line_merges(game.cells[0]),
                  TwentyFortyEight.count_line_merges(game.cells[1]),
                  TwentyFortyEight.count_line_merges(game.cells[2]),
@@ -318,40 +302,22 @@ def transform_state(game, representation):
                  TwentyFortyEight.count_line_merges([game.cells[0][2], game.cells[1][2], game.cells[2][2], game.cells[3][2]]) +
                  TwentyFortyEight.count_line_merges([game.cells[0][3], game.cells[1][3], game.cells[2][3], game.cells[3][3]]) ]
     else:
+        # Representation B:
         values         = [ game.cells[row][column] for row in range(4) for column in range(4) ]
         unique_nonzero = sorted(list(set(values) - set([0])))
         return [ (unique_nonzero.index(value) + 1 if value in unique_nonzero else 0) for value in values ]
 
-
-#    def get_successor_values(move):
-#        game.move(move, with_spawn=False)
-#        free   = game.count_free()
-#        merges = game.count_merges()
-#        game.undo_move()
-#        return free, merges
-#
-#    current_free   = game.count_free()
-#    current_merges = game.count_merges()
-#
-#    free_up, merges_up       = get_successor_values(UP)
-#    free_down, merges_down   = get_successor_values(DOWN)
-#    free_left, merges_left   = get_successor_values(LEFT)
-#    free_right, merges_right = get_successor_values(RIGHT)
-#
-#    if delta:
-#        return [ free_up - current_free, free_down - current_free, free_left - current_free, free_right - current_free,
-#                 merges_up - current_merges, merges_down - current_merges, merges_left - current_merges, merges_right - current_merges ]
-#    else:
-#        return [ current_free, current_merges, free_up, merges_up, free_down, merges_down, free_left, merges_left, free_right, merges_right ]
-
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--L1', type=float)
-    parser.add_argument('--L2', type=float)
     parser.add_argument('--A', action='store_true')
     parser.add_argument('--B', action='store_true')
+    parser.add_argument('--L1', type=float)
+    parser.add_argument('--L2', type=float)
     parser.add_argument('--ai', action='store_true')
-    parser.add_argument('--data', default='training_data.pkl')
+    parser.add_argument('--benchmark', type=int)
+    parser.add_argument('--compare', type=int)
+    parser.add_argument('--data_a', default='training_data_a.pkl')
+    parser.add_argument('--data_b', default='training_data_b.pkl')
     parser.add_argument('--demo', action='store_true')
     parser.add_argument('--dropout', type=float)
     parser.add_argument('--epochs', type=int, default=100)
@@ -361,14 +327,15 @@ def main():
     parser.add_argument('--learning_rate', type=float, default=0.08)
     parser.add_argument('--max_time', type=int)
     parser.add_argument('--minibatch_size', type=int, default=40)
-    parser.add_argument('--model', default='model.pkl')
+    parser.add_argument('--model_a', default='model_a.pkl')
+    parser.add_argument('--model_b', default='model_b.pkl')
     parser.add_argument('--output_directory', default='../data')
     parser.add_argument('--runs', action='store_true')
     parser.add_argument('--seed', type=int)
     parser.add_argument('--training_ratio', type=float)
     args = parser.parse_args()
 
-    if not args.A and not args.B:
+    if not args.A and not args.B and not args.compare:
         print('A or B representation must be chosen!')
         sys.exit(-1)
 
@@ -381,6 +348,18 @@ def main():
         print('random play: {}'.format(Lr))
         print('ann play: {}'.format(La))
         print(ai2048demo.welch(Lr, La))
+    elif args.benchmark:
+        network = pickle.load(open(args.model_a if args.A else args.model_b, 'rb'))
+
+        predict_function = theano.function(
+            inputs=[network.inputs],
+            outputs=network.layers[-1].testing_outputs,
+            allow_input_downcast=True)
+
+        La = [ play_ann_game(args.B, predict_function) for _ in range(args.benchmark) ]
+
+        print('mean: {} std: {}'.format(numpy.mean(La), numpy.std(La)))
+
     elif args.generate:
         training_data   = []
         training_labels = []
@@ -398,10 +377,33 @@ def main():
         random.shuffle(training_examples)
         training_data[:], training_labels[:] = zip(*training_examples)
 
-        with open(args.data, 'wb') as training_data_file:
+        with open(args.data_a if args.A else args.data_b, 'wb') as training_data_file:
             pickle.dump((training_data, training_labels), training_data_file)
+    elif args.compare:
+        import scipy.stats
+
+        network_a = pickle.load(open(args.model_a, 'rb'))
+        network_b = pickle.load(open(args.model_b, 'rb'))
+
+        predict_function_a = theano.function(
+            inputs=[network_a.inputs],
+            outputs=network_a.layers[-1].testing_outputs,
+            allow_input_downcast=True)
+
+        predict_function_b = theano.function(
+            inputs=[network_b.inputs],
+            outputs=network_b.layers[-1].testing_outputs,
+            allow_input_downcast=True)
+
+        La_a = [ play_ann_game(False, predict_function_a) for _ in range(args.compare) ]
+        La_b = [ play_ann_game(True,  predict_function_b) for _ in range(args.compare) ]
+
+        statistic, pvalue = scipy.stats.ttest_ind(La_a, La_b, equal_var=False)
+
+        print('statistic = {:f} pvalue = {:f}'.format(statistic, pvalue))
+
     elif args.demo:
-        network = pickle.load(open(args.model, 'rb'))
+        network = pickle.load(open(args.model_a if args.A else args.model_b, 'rb'))
 
         predict_function = theano.function(
             inputs=[network.inputs],
@@ -436,13 +438,13 @@ def main():
     else:
         def epoch_status_function(time, epoch, average_loss, testing_error, is_best):
             if is_best:
-                with open(args.model, 'wb') as model_file:
+                with open(args.model_a if args.A else args.model_b, 'wb') as model_file:
                     pickle.dump(network, model_file)
 
             print("Time: {:7.2f} sec, Epoch: {:4d}, Average loss: {:.5f}, Testing error: {:.5f}%".format(
                 time, epoch, average_loss, testing_error * 100.0))
 
-        x_data, y_data = pickle.load(open(args.data, 'rb'))
+        x_data, y_data = pickle.load(open(args.data_a if args.A else args.data_b, 'rb'))
         #x_data, y_data = shuffle(x_data, y_data, random_state=0)
 
         num_training_examples = int(math.ceil(args.training_ratio * len(x_data))) \
