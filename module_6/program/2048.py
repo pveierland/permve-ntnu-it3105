@@ -528,6 +528,21 @@ def main():
             training_epochs / training_time,
             testing_error * 100.0))
 
+        predict_function = theano.function(
+            inputs=[network.inputs],
+            outputs=network.layers[-1].testing_outputs,
+            allow_input_downcast=True)
+
+        for x, y in zip(x_data, y_data):
+            x = numpy.asarray(x)
+            move_probabilities = predict_function(x.reshape(1, x.shape[0]))[0]
+            move_probabilities_sorted = sorted(((probability, move) for (move, probability) in enumerate(move_probabilities)), reverse=True)
+
+            if move_probabilities_sorted[0][1] != y:
+                print("BAD MOVE! predicted {} should be {}: {}".format(move_probabilities_sorted[0][1], y, x))
+
+            
+
 #window = GameWindow( )
 #window.update_view(flatstuff(g.cells))
 #window.mainloop()
