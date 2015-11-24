@@ -1,11 +1,11 @@
 #!/bin/bash
 
-epochs=250
+epochs=200
 output_directory=magic
 
 default_layer_size=512
-default_learning_rate=0.08
-default_minibatch_size=20
+default_learning_rate=0.1
+default_minibatch_size=25
 default_L2=0.0001
 
 for i in {1..20}
