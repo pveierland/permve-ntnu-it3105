@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-#from visuals import GameWindow
+from visuals import GameWindow
 
 import argparse
 import ai2048demo
@@ -11,6 +11,7 @@ import struct
 import random
 import sys
 import pickle
+import time
 import theano
 import theano.tensor as T
 
@@ -343,6 +344,9 @@ def main():
 
     print(args)
 
+    random.seed(42)
+    numpy.random.seed(random.randint(0, 2 ** 30))
+
     if args.ai:
         if args.benchmark:
             La = list(play_ai_game(args.B) for _ in range(args.benchmark))
@@ -404,6 +408,9 @@ def main():
         La_b = [ play_ann_game(True,  predict_function_b) for _ in range(args.compare) ]
 
         statistic, pvalue = scipy.stats.ttest_ind(La_a, La_b, equal_var=False)
+
+        print('A mean: {} A std: {}'.format(numpy.mean(La_a), numpy.std(La_a)))
+        print('B mean: {} B std: {}'.format(numpy.mean(La_b), numpy.std(La_b)))
 
         print('statistic = {:f} pvalue = {:f}'.format(statistic, pvalue))
 
@@ -526,12 +533,10 @@ def main():
             training_epochs,
             training_epochs / training_time,
             testing_error * 100.0))
-            
 
-#window = GameWindow( )
-#window.update_view(flatstuff(g.cells))
-#window.mainloop()
-
+# window = GameWindow()
+# window.update_view([int(math.log(game.cells[row][column], 2)) if game.cells[row][column] else 0 for row in range(4) for column in range(4)])
+# window.mainloop()
 
 if __name__ == "__main__":
     main()
