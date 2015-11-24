@@ -14,8 +14,6 @@ import pickle
 import theano
 import theano.tensor as T
 
-from sklearn.utils import shuffle
-
 sys.path.append('../../vi')
 import vi.theano
 
@@ -396,7 +394,9 @@ def main():
 
         print('{} examples generated from {} games'.format(len(training_data), args.generate))
 
-        training_data, training_labels = shuffle(training_data, training_labels, random_state=0)
+        training_examples = list(zip(training_data, training_labels))
+        random.shuffle(training_examples)
+        training_data[:], training_labels[:] = zip(*training_examples)
 
         with open(args.data, 'wb') as training_data_file:
             pickle.dump((training_data, training_labels), training_data_file)
@@ -405,7 +405,8 @@ def main():
 
         predict_function = theano.function(
             inputs=[network.inputs],
-            outputs=network.layers[-1].testing_outputs)
+            outputs=network.layers[-1].testing_outputs,
+            allow_input_downcast=True)
 
         La = []
 
@@ -414,8 +415,8 @@ def main():
             game.new_tile()
 
             while not game.is_game_over():
-                input = numpy.asarray(transform_state(game, args.B))
-                move_probabilities = predict_function(input.reshape(1, input.shape[0]))[0]
+                x = numpy.asarray(transform_state(game, args.B))
+                move_probabilities = predict_function(x.reshape(1, x.shape[0]))[0]
                 move_probabilities_sorted = sorted(((probability, move) for (move, probability) in enumerate(move_probabilities)), reverse=True)
 
                 # Select the first valid move ranked by probability:
