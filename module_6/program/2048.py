@@ -106,7 +106,7 @@ class TwentyFortyEight:
         # Print a string representation of the grid for debugging.
         for number in range(0, 4):
             print(self.cells[number])
-    
+
     def can_move(self, direction):
         temp = copy.deepcopy(self.cells)
         result = self.move(direction, with_spawn=False)
@@ -120,7 +120,7 @@ class TwentyFortyEight:
 
     def count_free(self):
         return sum(cell == 0 for row in self.cells for cell in row)
-    
+
     def count_merges(self):
         return self.count_horizontal_merges() + \
                self.count_vertical_merges()
@@ -226,7 +226,7 @@ class TwentyFortyEight:
     def undo_move(self):
         self.cells = self.cells_before
 
-def generate_training_data():
+def generate_training_data(representation):
     game = TwentyFortyEight()
     game.new_tile()
 
@@ -234,8 +234,8 @@ def generate_training_data():
     ydata = []
 
     while not game.is_game_over():
-        x = transform_state(game)
-        y = max((score_move(game, move), move) for move in range(4))[1]
+        x = transform_state(game, representation)
+        y = max((score_move(game, representation, move), move) for move in range(4))[1]
 
         xdata.append(x)
         ydata.append(y)
@@ -262,7 +262,7 @@ def expectomax_player_node(game, depth):
             if score > best_score:
                 best_move  = move
                 best_score = score
-            
+
             game.undo_move()
 
     return best_move, best_score
@@ -281,7 +281,7 @@ def expectomax_chance_node(game, depth):
 
     return score / available
 
-def score_move(game, move):
+def score_move(game, representation, move):
     if game.move(move, with_spawn=False):
         #score = game.count_merges() #game.count_merges()
         #score = 10 * game.count_merges() + game.count_free()
@@ -291,12 +291,12 @@ def score_move(game, move):
     else:
         return -1
 
-def play_ai_game():
+def play_ai_game(representation):
     game = TwentyFortyEight()
     game.new_tile()
 
     while not game.is_game_over():
-        game.move(max((score_move(game, move), move) for move in range(4))[1])
+        game.move(max((score_move(game, representation, move), move) for move in range(4))[1])
 
     return game.get_highest_tile()
 
@@ -309,10 +309,21 @@ def play_random_game():
 
     return game.get_highest_tile()
 
-def transform_state(game, delta=False):
-    return [ #game.count_free(),
-             game.count_horizontal_merges(),
-             game.count_vertical_merges() ]
+def transform_state(game, representation):
+    if not representation:
+        return [ TwentyFortyEight.count_line_merges(game.cells[0]),
+                 TwentyFortyEight.count_line_merges(game.cells[1]),
+                 TwentyFortyEight.count_line_merges(game.cells[2]),
+                 TwentyFortyEight.count_line_merges(game.cells[3]),
+                 TwentyFortyEight.count_line_merges([game.cells[0][0], game.cells[1][0], game.cells[2][0], game.cells[3][0]]),
+                 TwentyFortyEight.count_line_merges([game.cells[0][1], game.cells[1][1], game.cells[2][1], game.cells[3][1]]) +
+                 TwentyFortyEight.count_line_merges([game.cells[0][2], game.cells[1][2], game.cells[2][2], game.cells[3][2]]) +
+                 TwentyFortyEight.count_line_merges([game.cells[0][3], game.cells[1][3], game.cells[2][3], game.cells[3][3]]) ]
+    else:
+        values         = [ game.cells[row][column] for row in range(4) for column in range(4) ]
+        unique_nonzero = sorted(list(set(values) - set([0])))
+        return [ (unique_nonzero.index(value) + 1 if value in unique_nonzero else 0) for value in values ]
+
 
 #    def get_successor_values(move):
 #        game.move(move, with_spawn=False)
@@ -339,9 +350,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--L1', type=float)
     parser.add_argument('--L2', type=float)
+    parser.add_argument('--A', action='store_true')
+    parser.add_argument('--B', action='store_true')
     parser.add_argument('--ai', action='store_true')
     parser.add_argument('--data', default='training_data.pkl')
-    parser.add_argument('--delta', action='store_true')
     parser.add_argument('--demo', action='store_true')
     parser.add_argument('--dropout', type=float)
     parser.add_argument('--epochs', type=int, default=100)
@@ -358,11 +370,15 @@ def main():
     parser.add_argument('--training_ratio', type=float)
     args = parser.parse_args()
 
+    if not args.A and not args.B:
+        print('A or B representation must be chosen!')
+        sys.exit(-1)
+
     print(args)
 
     if args.ai:
         Lr = list(play_random_game() for _ in range(50))
-        La = list(play_ai_game() for _ in range(50))
+        La = list(play_ai_game(args.B) for _ in range(50))
 
         print('random play: {}'.format(Lr))
         print('ann play: {}'.format(La))
@@ -372,7 +388,7 @@ def main():
         training_labels = []
 
         for i in range(args.generate):
-            top_tile, x, y = generate_training_data()
+            top_tile, x, y = generate_training_data(args.B)
             training_data.extend(x)
             training_labels.extend(y)
 
@@ -398,7 +414,7 @@ def main():
             game.new_tile()
 
             while not game.is_game_over():
-                input = numpy.asarray(transform_state(game, args.delta))
+                input = numpy.asarray(transform_state(game, args.B))
                 move_probabilities = predict_function(input.reshape(1, input.shape[0]))[0]
                 move_probabilities_sorted = sorted(((probability, move) for (move, probability) in enumerate(move_probabilities)), reverse=True)
 
@@ -422,8 +438,8 @@ def main():
                 with open(args.model, 'wb') as model_file:
                     pickle.dump(network, model_file)
 
-            print("Time: {:7.2f} sec, Epoch: {:4d}, Testing error: {:.5f}%".format(
-                time, epoch, testing_error * 100.0))
+            print("Time: {:7.2f} sec, Epoch: {:4d}, Average loss: {:.5f}, Testing error: {:.5f}%".format(
+                time, epoch, average_loss, testing_error * 100.0))
 
         x_data, y_data = pickle.load(open(args.data, 'rb'))
         #x_data, y_data = shuffle(x_data, y_data, random_state=0)
