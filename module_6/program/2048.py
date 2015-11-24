@@ -233,16 +233,17 @@ def generate_training_data(representation):
 
     while not game.is_game_over():
         moves_scored = sorted(((score_move(game, representation, move), move) for move in range(4)), reverse=True)
+        best_move    = moves_scored[0][1]
 
         # Only use as training example if move is scored better than any other move:
         if any(moves_scored[i][0] != moves_scored[0][0] for i in range(1, 4)):
             x = transform_state(game, representation)
-            y = moves_scored[0][1]
+            y = best_move
 
             xdata.append(x)
             ydata.append(y)
 
-        game.move(y)
+        game.move(best_move)
 
     return game.get_highest_tile(), xdata, ydata
 
