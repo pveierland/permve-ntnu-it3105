@@ -1,9 +1,10 @@
 \input{../../../permve-ntnu-latex/assignment.tex}
 
 \usepackage{float}
+\usepackage{tabularx}
 
-\title{	
-\normalfont \normalsize 
+\title{
+\normalfont \normalsize
 \textsc{Norwegian University of Science and Technology\\IT3105 -- Artificial Intelligence Programming}
 \horrule{0.5pt} \\[0.4cm]
 \huge Module 5:\\ Neural Networks for Image Classification\\
@@ -14,19 +15,22 @@
 
 \date{\normalsize\today}
 
-%\pgfplotscreateplotcyclelist{mycolorlist}{%
-%blue,every mark/.append style={fill=blue!80!black},mark=*\\%
-%red,every mark/.append style={fill=red!80!black},mark=square*\\%
-%brown!60!black,every mark/.append style={fill=brown!80!black},mark=otimes*\\%
-%black,mark=star\\%
-%blue,every mark/.append style={fill=blue!80!black},mark=diamond*\\%
-%red,densely dashed,every mark/.append style={solid,fill=red!80!black},mark=*\\%
-%brown!60!black,densely dashed,every mark/.append style={
-%solid,fill=brown!80!black},mark=square*\\%
-%black,densely dashed,every mark/.append style={solid,fill=gray},mark=otimes*\\%
-%blue,densely dashed,mark=star,every mark/.append style=solid\\%
-%red,densely dashed,every mark/.append style={solid,fill=red!80!black},mark=diamond*\\%
-%}
+\pgfplotsset{compat=1.5}
+
+\pgfplotsset{
+every axis/.append style={
+scale only axis,
+width=0.42\textwidth,height=0.3\textwidth,
+},
+/tikz/every picture/.append style={
+trim axis left,
+trim axis right,
+baseline
+}
+}
+
+\newacro{ANN}{Artificial Neural Network}
+\newacro{SGD}{Stochastic Gradient Descent}
 
 \begin{document}
 
@@ -34,87 +38,133 @@
 \maketitle
 
 \newpage
+\fancyfoot[C]{\thepage~of~\pageref{LastPage}} % Page numbering for right footer
+\setcounter{page}{1}
+
+\section*{Network Comparison}
+
+A central part of the module is to select five specific \acp{ANN} configurations and compare them. During prototyping, many configurations were tested to find sane values for parameters such as the learning rate and the minibatch size. Performing hyperparameter tuning is not a trivial task since most of the parameters are linked such that tuning one parameter will affect the optimal values of other parameters. The \ac{SGD} training algorithm used for this module requires setting a manual learning rate. More sophisticated optimization algorithms such as \textit{Broyden-Fletcher-Goldfarb-Shanno}~(BFGS) does not require setting a learning rate manually and thus reduces the amount of tuning required.
 
 
-\resizebox {8cm} {!} {
-\begin{tikzpicture}
-\begin{axis}[xlabel={Epochs},ylabel={Error [\%]}, cycle list name=color list, mark=none, xmin=25]
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.00005_L2/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.0005_L2/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.001_L2/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.8_dropout/loss.txt};
-\addlegendentry{plain}
-\addlegendentry{0.00005 L2}
-\addlegendentry{0.0001 L2}
-\addlegendentry{0.0005 L2}
-\addlegendentry{0.001 L2}
-\addlegendentry{dropout}
-\end{axis}
-\end{tikzpicture}
+All five networks shares the same dimensions. During prototyping it was found that a single hidden layer is able to learn the dataset well, however it was also clear that a small hidden layer (e.g. 64 nodes) was not able to store the amount of information in the training data and could only achieve an test error rate of 6-7\%. To achieve a legitimate comparison between configurations only a single hyperparameter has been changed at a time between the networks. Although the topology is fixed for the five final networks, it has been experimented with, and the \textsc{L2} and dropout parameters which were found to be more impactful were chosen instead as a focus in the comparison.
+
+
+The three first networks were chosen to test different hidden layer activation functions; the \textit{sigmoid} function, the \textit{hyperbolic tangent} function, and the \textit{rectifier} function. The mean error and standard deviation values shown in Table~\ref{table:results} shows that the \textit{sigmoid} and the \textit{hyperbolic tangent} functions perform almost identically; while the \textit{rectifier} function performs significantly better and has a 3.7~\% improved mean error rate compared to the two other functions, in addition to having a smaller variance. Even though the \textit{sigmoid} and \textit{hyperbolic tangent} functions result in similar error test rate performance, an important difference can be seen in Figure~\ref{fig:N1} and \ref{fig:N2}; the number of epochs it takes to minimize the loss function is about 90~epochs for the \textit{sigmoid} function and about 30~epochs for the \textit{hyperbolic tangent} function; suggesting that a network can be trained faster using the latter.
+
+
+Network~4 introduces \textsc{L2} regularization. Regularization techniques attempts to enforce more general learning to avoid overfitting. \textsc{L2} regularization is commonly suggested as a beneficial feature when composing loss functions. \textsc{L2} regularization forces weights to not grow excessively by adding the sum of the squares of all network weights, not including biases. A few different \textsc{L2} values were tested; however even the best value found does not improve the mean error rate achieved without using \textsc{L2} regularization. It can be seen that network~4 using \textsc{L2} regularization has the lowest test error variance of all five networks. Observing Figure~\ref{fig:N4} also shows that overfitting takes longer compared to network~3 (Figure~\ref{fig:N3}). Further study of regularization would likely be able to improve upon the test error achieved by network~5.
+
+
+Network~5 introduces dropout which is a very powerful technique to reduce overfitting when using large networks. A dropout factor indicates the ratio of nodes which are randomly activated in a layer per minibatch iteration. A factor of 1 means that all nodes are active and a factor of 0 means that no nodes are active. Dropout effectively creates ensembles of smaller networks with a robust total performance. It is possible to use different dropout factors for different layers, but in this implementation a single dropout factor controls the dropout in all layers. Observing the cost functions for network 1-4 it is clear that overfitting is a problem. The resulting performance for network 5 was the best of tested configurations. Lower dropout factors such as 0.5 were tested, but did not achieve the same level of performance.
+
+\begin{table}
+{\small
+\begin{tabular}{cccccccc}
+\toprule
+Network & Dimensions                 & Hidden $f$       & Output $f$       & Mean $\varepsilon$ [\%] & $\varepsilon~\sigma$ [\%] & \textsc{L2}& Dropout \\
+\midrule
+1       & $784 \times 512 \times 10$ & \textsc{Sigmoid} & \textsc{Softmax} & 1.7370                  & 0.0647                    & 0.0        & 0.0     \\
+2       & $784 \times 512 \times 10$ & \textsc{Tanh}    & \textsc{Softmax} & 1.7390                  & 0.0602                    & 0.0        & 0.0     \\
+3       & $784 \times 512 \times 10$ & \textsc{ReLu}    & \textsc{Softmax} & 1.6740                  & 0.0466                    & 0.0        & 0.0     \\
+4       & $784 \times 512 \times 10$ & \textsc{ReLu}    & \textsc{Softmax} & 1.6940                  & 0.0397                    & 0.00005    & 0.0     \\
+5       & $784 \times 512 \times 10$ & \textsc{ReLu}    & \textsc{Softmax} & 1.2105                  & 0.0741                    & 0.0        & 0.8     \\
+\bottomrule
+\end{tabular}
+}
+\caption{Statistics based on 20 training runs of 200 epochs. All networks use cross-entropy cost functions and are trained with learning~rate~0.1 and minibatch~size~25. $\varepsilon~=~\text{MNIST test set error}$. $\sigma~=~\text{standard deviation}$.}
+\label{table:results}
+\end{table}
+
+\newcommand{\displaytwentyplots}[2]{
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/1/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/2/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/3/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/4/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/5/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/6/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/7/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/8/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/9/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/10/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/11/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/12/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/13/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/14/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/15/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/16/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/17/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/18/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/19/#2.txt};
+    \addplot table[x index=0,y index=2,col sep=space] {../data/#1/20/#2.txt};
 }
 
-\resizebox {8cm} {!} {
-\begin{tikzpicture}
-\begin{axis}[xlabel={Epochs},ylabel={Error [\%]}, cycle list name=color list, mark=none, xmin=25]
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.00005_L2/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.0005_L2/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.001_L2/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_128_layers_relu_activation_0.08_learning_20_minibatches_0.8_dropout/error.txt};
-\addlegendentry{plain}
-\addlegendentry{0.00005 L2}
-\addlegendentry{0.0001 L2}
-\addlegendentry{0.0005 L2}
-\addlegendentry{0.001 L2}
-\addlegendentry{dropout}
-\end{axis}
-\end{tikzpicture}
+\newcommand{\displayerrorgraph}[1]{
+    \begin{tikzpicture}
+    \begin{axis}[xlabel={Epochs},ylabel={Test error [\%]}, cycle list name=color list, mark=none]
+    \displaytwentyplots{#1}{error}
+    \end{axis}
+    \end{tikzpicture}
 }
 
-\resizebox {8cm} {!} {
-\begin{tikzpicture}
-\begin{axis}[xlabel={Epochs},ylabel={Error [\%]}, cycle list name=color list, mark=none, xmin=25]
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.6_dropout/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.7_dropout/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.8_dropout/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.6_dropout/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.7_dropout/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.8_dropout/loss.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_200_minibatches_0.0001_L2_0.5_dropout/loss.txt};
-\addlegendentry{10 0.6}
-\addlegendentry{10 0.7}
-\addlegendentry{10 0.8}
-\addlegendentry{20 0.6}
-\addlegendentry{20 0.7}
-\addlegendentry{20 0.8}
-\addlegendentry{200 0.5}
-\end{axis}
-\end{tikzpicture}
+\newcommand{\displaylossgraph}[1]{
+    \begin{tikzpicture}
+    \begin{axis}[xlabel={Epochs},ylabel={Loss function [log]}, cycle list name=color list, mark=none, ymode=log]
+    \displaytwentyplots{#1}{loss}
+    \end{axis}
+    \end{tikzpicture}
 }
 
-\resizebox {8cm} {!} {
-\begin{tikzpicture}
-\begin{axis}[xlabel={Epochs},ylabel={Error [\%]}, cycle list name=color list, mark=none, xmin=25]
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.6_dropout/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.7_dropout/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_10_minibatches_0.0001_L2_0.8_dropout/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.6_dropout/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.7_dropout/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_20_minibatches_0.0001_L2_0.8_dropout/error.txt};
-\addplot table[x index=0,y index=2,col sep=space] {../scripts/hyper/mnist_network_512_layers_relu_activation_0.08_learning_200_minibatches_0.0001_L2_0.5_dropout/error.txt};
-\addlegendentry{10 0.6}
-\addlegendentry{10 0.7}
-\addlegendentry{10 0.8}
-\addlegendentry{20 0.6}
-\addlegendentry{20 0.7}
-\addlegendentry{20 0.8}
-\addlegendentry{200 0.5}
-\end{axis}
-\end{tikzpicture}
-}
+\begin{figure}[H]
+\centering
+\begin{tabularx}{\textwidth}{XcXc}
+~ & \displaylossgraph{mnist_network_512_layers_sigmoid_activation_0.1_learning_25_minibatches} & ~ &
+\displayerrorgraph{mnist_network_512_layers_sigmoid_activation_0.1_learning_25_minibatches} \\
+\end{tabularx}
+\caption{Network 1 -- $784~\textsc{Input} \times 512~\textsc{Sigmoid} \times 10~\textsc{Softmax}$}
+\label{fig:N1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tabularx}{\textwidth}{XcXc}
+~ & \displaylossgraph{mnist_network_512_layers_tanh_activation_0.1_learning_25_minibatches} & ~ &
+\displayerrorgraph{mnist_network_512_layers_tanh_activation_0.1_learning_25_minibatches} \\
+\end{tabularx}
+\caption{Network 2 -- $784~\textsc{Input} \times 512~\textsc{Tanh} \times 10~\textsc{Softmax}$}
+\label{fig:N2}
+\end{figure}
+
+\newpage
+
+\begin{figure}[H]
+\centering
+\begin{tabularx}{\textwidth}{XcXc}
+~ & \displaylossgraph{mnist_network_512_layers_relu_activation_0.1_learning_25_minibatches} & ~ &
+\displayerrorgraph{mnist_network_512_layers_relu_activation_0.1_learning_25_minibatches} \\
+\end{tabularx}
+\caption{Network 3 -- $784~\textsc{Input} \times 512~\textsc{ReLu} \times 10~\textsc{Softmax}$}
+\label{fig:N3}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tabularx}{\textwidth}{XcXc}
+~ & \displaylossgraph{mnist_network_512_layers_relu_activation_0.1_learning_25_minibatches_0.00005_L2} & ~ &
+\displayerrorgraph{mnist_network_512_layers_relu_activation_0.1_learning_25_minibatches_0.00005_L2} \\
+\end{tabularx}
+\caption{Network 4 -- $784~\textsc{Input} \times 512~\textsc{ReLu} \times 10~\textsc{Softmax}$ -- \textsc{L2}: 0.00005}
+\label{fig:N4}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tabularx}{\textwidth}{XcXc}
+~ & \displaylossgraph{mnist_network_512_layers_relu_activation_0.1_learning_25_minibatches_0.8_dropout} & ~ &
+\displayerrorgraph{mnist_network_512_layers_relu_activation_0.1_learning_25_minibatches_0.8_dropout} \\
+\end{tabularx}
+\caption{Network 5 -- $784~\textsc{Input} \times 512~\textsc{ReLu} \times 10~\textsc{Softmax}$ -- Dropout: 0.8}
+\label{fig:N5}
+\end{figure}
 
 \end{document}
 
