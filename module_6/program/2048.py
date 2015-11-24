@@ -235,8 +235,8 @@ def generate_training_data(representation):
         moves_scored = sorted(((score_move(game, representation, move), move) for move in range(4)), reverse=True)
         best_move    = moves_scored[0][1]
 
-        # Only use as training example if move is scored better than any other move:
-        if any(moves_scored[i][0] != moves_scored[0][0] for i in range(1, 4)):
+        # Only use as training example if move is scored better than all other moves:
+        if not any(moves_scored[i][0] == moves_scored[0][0] for i in range(1, 4)):
             x = transform_state(game, representation)
             y = best_move
 
@@ -343,12 +343,17 @@ def main():
     print(args)
 
     if args.ai:
-        Lr = list(play_random_game() for _ in range(50))
-        La = list(play_ai_game(args.B) for _ in range(50))
+        if args.benchmark:
+            #La = list(play_ai_game(args.B) for _ in range(args.benchmark))
+            La = list(play_random_game() for _ in range(args.benchmark))
+            print('mean: {} std: {}'.format(numpy.mean(La), numpy.std(La)))
+        else:
+            Lr = list(play_random_game() for _ in range(50))
+            La = list(play_ai_game(args.B) for _ in range(50))
 
-        print('random play: {}'.format(Lr))
-        print('ann play: {}'.format(La))
-        print(ai2048demo.welch(Lr, La))
+            print('random play: {}'.format(Lr))
+            print('ann play: {}'.format(La))
+            print(ai2048demo.welch(Lr, La))
     elif args.benchmark:
         network = pickle.load(open(args.model_a if args.A else args.model_b, 'rb'))
 
@@ -358,7 +363,6 @@ def main():
             allow_input_downcast=True)
 
         La = [ play_ann_game(args.B, predict_function) for _ in range(args.benchmark) ]
-
         print('mean: {} std: {}'.format(numpy.mean(La), numpy.std(La)))
 
     elif args.generate:
