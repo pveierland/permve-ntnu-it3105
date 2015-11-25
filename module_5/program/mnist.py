@@ -15,6 +15,7 @@ import time
 
 sys.path.append('../mnist/basics')
 import mnist_basics
+import mnistdemo
 sys.path.append('../../vi')
 import vi.theano
 
@@ -188,7 +189,7 @@ def main():
             d   = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../mnist/basics/')
             print('r = {} d = {}'.format(args.R, d))
 
-            mnist_basics.major_demo(ann, args.R, d)
+            mnistdemo.major_demo(ann, args.R, d)
         elif args.minor_demo:
             mnist_basics.minor_demo(Ann(predict_function, args.minibatch_size))
         elif args.data:
