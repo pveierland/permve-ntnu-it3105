@@ -1,3 +1,7 @@
+#!/usr/bin/python3
+import sys
+sys.path.append('../../..')
+
 import os
 import sys
 import time
